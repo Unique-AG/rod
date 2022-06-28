@@ -3,8 +3,8 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/proto"
 )
 
 // This example demonstrates how to take a screenshot of a specific element and

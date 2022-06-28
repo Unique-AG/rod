@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-rod/rod/lib/defaults"
-	"github.com/go-rod/rod/lib/launcher/flags"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod/lib/defaults"
+	"github.com/Unique-AG/rod/lib/launcher/flags"
+	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/leakless"
 )
 

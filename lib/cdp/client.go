@@ -8,8 +8,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/go-rod/rod/lib/defaults"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod/lib/defaults"
+	"github.com/Unique-AG/rod/lib/utils"
 )
 
 // Client is a devtools protocol connection instance.

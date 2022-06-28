@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/got"
 )
 

@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod/lib/utils"
 )
 
 const registry = "ghcr.io"
-const image = registry + "/go-rod/rod"
+const image = registry + "/Unique-AG/rod"
 
 var token = os.Getenv("DOCKER_TOKEN")
 
@@ -73,5 +73,5 @@ func description() string {
 
 	sha := strings.TrimSpace(string(b))
 
-	return `--label=org.opencontainers.image.description=https://github.com/go-rod/rod/blob/` + sha + "/lib/docker/Dockerfile"
+	return `--label=org.opencontainers.image.description=https://github.com/Unique-AG/rod/blob/` + sha + "/lib/docker/Dockerfile"
 }

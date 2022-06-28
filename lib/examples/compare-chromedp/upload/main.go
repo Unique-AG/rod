@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-rod/rod"
+	"github.com/Unique-AG/rod"
 )
 
 var flagPort = flag.Int("port", 8544, "port")

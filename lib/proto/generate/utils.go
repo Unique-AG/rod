@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-rod/rod/lib/launcher"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod/lib/launcher"
+	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/gson"
 )
 

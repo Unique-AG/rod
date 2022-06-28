@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/utils"
 )
 
 func main() {

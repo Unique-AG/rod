@@ -1,6 +1,6 @@
 package main
 
-import "github.com/go-rod/rod/lib/utils"
+import "github.com/Unique-AG/rod/lib/utils"
 
 func main() {
 	utils.ExecLine("go install github.com/ysmood/golangci-lint@latest")

@@ -1,5 +1,5 @@
 # To build the image:
-#     docker build -t ghcr.io/go-rod/rod -f lib/docker/Dockerfile .
+#     docker build -t ghcr.io/Unique-AG/rod -f lib/docker/Dockerfile .
 #
 
 # build rod-manager

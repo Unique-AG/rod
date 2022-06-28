@@ -3,10 +3,10 @@ package rod_test
 import (
 	"time"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/cdp"
-	"github.com/go-rod/rod/lib/proto"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/cdp"
+	"github.com/Unique-AG/rod/lib/proto"
+	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/gson"
 )
 

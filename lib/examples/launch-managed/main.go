@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
-	"github.com/go-rod/rod/lib/utils"
+	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/launcher"
+	"github.com/Unique-AG/rod/lib/utils"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 	// to connect to a running browser check the "../connect-browser" example.
 	// Rod provides a docker image for beginers, run the below to start a launcher.Manager:
 	//
-	//     docker run -p 7317:7317 ghcr.io/go-rod/rod
+	//     docker run -p 7317:7317 ghcr.io/Unique-AG/rod
 	//
 	// For more information, check the doc of launcher.Manager
 	l := launcher.MustNewManaged("")

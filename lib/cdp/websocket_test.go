@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-rod/rod/lib/cdp"
-	"github.com/go-rod/rod/lib/launcher"
+	"github.com/Unique-AG/rod/lib/cdp"
+	"github.com/Unique-AG/rod/lib/launcher"
 	"github.com/ysmood/gson"
 )
 

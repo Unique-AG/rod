@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/devices"
+	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/devices"
 )
 
 func main() {
