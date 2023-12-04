@@ -34,7 +34,6 @@ const (
 
 // LayerTreeScrollRect Rectangle where scrolling happens on the main thread.
 type LayerTreeScrollRect struct {
-
 	// Rect Rectangle itself.
 	Rect *DOMRect `json:"rect"`
 
@@ -44,7 +43,6 @@ type LayerTreeScrollRect struct {
 
 // LayerTreeStickyPositionConstraint Sticky position constraints.
 type LayerTreeStickyPositionConstraint struct {
-
 	// StickyBoxRect Layout rectangle of the sticky element before being shifted
 	StickyBoxRect *DOMRect `json:"stickyBoxRect"`
 
@@ -60,7 +58,6 @@ type LayerTreeStickyPositionConstraint struct {
 
 // LayerTreePictureTile Serialized fragment of layer picture along with its offset within the layer.
 type LayerTreePictureTile struct {
-
 	// X Offset from owning layer left boundary
 	X float64 `json:"x"`
 
@@ -73,7 +70,6 @@ type LayerTreePictureTile struct {
 
 // LayerTreeLayer Information about a compositing layer.
 type LayerTreeLayer struct {
-
 	// LayerID The unique id for this layer.
 	LayerID LayerTreeLayerID `json:"layerId"`
 
@@ -99,13 +95,13 @@ type LayerTreeLayer struct {
 	Transform []float64 `json:"transform,omitempty"`
 
 	// AnchorX (optional) Transform anchor point X, absent if no transform specified
-	AnchorX float64 `json:"anchorX,omitempty"`
+	AnchorX *float64 `json:"anchorX,omitempty"`
 
 	// AnchorY (optional) Transform anchor point Y, absent if no transform specified
-	AnchorY float64 `json:"anchorY,omitempty"`
+	AnchorY *float64 `json:"anchorY,omitempty"`
 
 	// AnchorZ (optional) Transform anchor point Z, absent if no transform specified
-	AnchorZ float64 `json:"anchorZ,omitempty"`
+	AnchorZ *float64 `json:"anchorZ,omitempty"`
 
 	// PaintCount Indicates how many time this layer has painted.
 	PaintCount int `json:"paintCount"`
@@ -129,7 +125,6 @@ type LayerTreePaintProfile []float64
 
 // LayerTreeCompositingReasons Provides the reasons why the given layer was composited.
 type LayerTreeCompositingReasons struct {
-
 	// LayerID The id of the layer for which we want to get the reasons it was composited.
 	LayerID LayerTreeLayerID `json:"layerId"`
 }
@@ -143,9 +138,8 @@ func (m LayerTreeCompositingReasons) Call(c Client) (*LayerTreeCompositingReason
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// LayerTreeCompositingReasonsResult Provides the reasons why the given layer was composited.
+// LayerTreeCompositingReasonsResult ...
 type LayerTreeCompositingReasonsResult struct {
-
 	// CompositingReasons (deprecated) A list of strings specifying reasons for the given layer to become composited.
 	CompositingReasons []string `json:"compositingReasons"`
 
@@ -154,8 +148,7 @@ type LayerTreeCompositingReasonsResult struct {
 }
 
 // LayerTreeDisable Disables compositing tree inspection.
-type LayerTreeDisable struct {
-}
+type LayerTreeDisable struct{}
 
 // ProtoReq name
 func (m LayerTreeDisable) ProtoReq() string { return "LayerTree.disable" }
@@ -166,8 +159,7 @@ func (m LayerTreeDisable) Call(c Client) error {
 }
 
 // LayerTreeEnable Enables compositing tree inspection.
-type LayerTreeEnable struct {
-}
+type LayerTreeEnable struct{}
 
 // ProtoReq name
 func (m LayerTreeEnable) ProtoReq() string { return "LayerTree.enable" }
@@ -179,7 +171,6 @@ func (m LayerTreeEnable) Call(c Client) error {
 
 // LayerTreeLoadSnapshot Returns the snapshot identifier.
 type LayerTreeLoadSnapshot struct {
-
 	// Tiles An array of tiles composing the snapshot.
 	Tiles []*LayerTreePictureTile `json:"tiles"`
 }
@@ -193,16 +184,14 @@ func (m LayerTreeLoadSnapshot) Call(c Client) (*LayerTreeLoadSnapshotResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// LayerTreeLoadSnapshotResult Returns the snapshot identifier.
+// LayerTreeLoadSnapshotResult ...
 type LayerTreeLoadSnapshotResult struct {
-
 	// SnapshotID The id of the snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 }
 
 // LayerTreeMakeSnapshot Returns the layer snapshot identifier.
 type LayerTreeMakeSnapshot struct {
-
 	// LayerID The id of the layer.
 	LayerID LayerTreeLayerID `json:"layerId"`
 }
@@ -216,24 +205,22 @@ func (m LayerTreeMakeSnapshot) Call(c Client) (*LayerTreeMakeSnapshotResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// LayerTreeMakeSnapshotResult Returns the layer snapshot identifier.
+// LayerTreeMakeSnapshotResult ...
 type LayerTreeMakeSnapshotResult struct {
-
 	// SnapshotID The id of the layer snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 }
 
 // LayerTreeProfileSnapshot ...
 type LayerTreeProfileSnapshot struct {
-
 	// SnapshotID The id of the layer snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 
 	// MinRepeatCount (optional) The maximum number of times to replay the snapshot (1, if not specified).
-	MinRepeatCount int `json:"minRepeatCount,omitempty"`
+	MinRepeatCount *int `json:"minRepeatCount,omitempty"`
 
 	// MinDuration (optional) The minimum duration (in seconds) to replay the snapshot.
-	MinDuration float64 `json:"minDuration,omitempty"`
+	MinDuration *float64 `json:"minDuration,omitempty"`
 
 	// ClipRect (optional) The clip rectangle to apply when replaying the snapshot.
 	ClipRect *DOMRect `json:"clipRect,omitempty"`
@@ -250,14 +237,12 @@ func (m LayerTreeProfileSnapshot) Call(c Client) (*LayerTreeProfileSnapshotResul
 
 // LayerTreeProfileSnapshotResult ...
 type LayerTreeProfileSnapshotResult struct {
-
 	// Timings The array of paint profiles, one per run.
 	Timings []LayerTreePaintProfile `json:"timings"`
 }
 
 // LayerTreeReleaseSnapshot Releases layer snapshot captured by the back-end.
 type LayerTreeReleaseSnapshot struct {
-
 	// SnapshotID The id of the layer snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 }
@@ -272,18 +257,17 @@ func (m LayerTreeReleaseSnapshot) Call(c Client) error {
 
 // LayerTreeReplaySnapshot Replays the layer snapshot and returns the resulting bitmap.
 type LayerTreeReplaySnapshot struct {
-
 	// SnapshotID The id of the layer snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 
 	// FromStep (optional) The first step to replay from (replay from the very start if not specified).
-	FromStep int `json:"fromStep,omitempty"`
+	FromStep *int `json:"fromStep,omitempty"`
 
 	// ToStep (optional) The last step to replay to (replay till the end if not specified).
-	ToStep int `json:"toStep,omitempty"`
+	ToStep *int `json:"toStep,omitempty"`
 
 	// Scale (optional) The scale to apply while replaying (defaults to 1).
-	Scale float64 `json:"scale,omitempty"`
+	Scale *float64 `json:"scale,omitempty"`
 }
 
 // ProtoReq name
@@ -295,16 +279,14 @@ func (m LayerTreeReplaySnapshot) Call(c Client) (*LayerTreeReplaySnapshotResult,
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// LayerTreeReplaySnapshotResult Replays the layer snapshot and returns the resulting bitmap.
+// LayerTreeReplaySnapshotResult ...
 type LayerTreeReplaySnapshotResult struct {
-
 	// DataURL A data: URL for resulting image.
 	DataURL string `json:"dataURL"`
 }
 
 // LayerTreeSnapshotCommandLog Replays the layer snapshot and returns canvas log.
 type LayerTreeSnapshotCommandLog struct {
-
 	// SnapshotID The id of the layer snapshot.
 	SnapshotID LayerTreeSnapshotID `json:"snapshotId"`
 }
@@ -318,16 +300,14 @@ func (m LayerTreeSnapshotCommandLog) Call(c Client) (*LayerTreeSnapshotCommandLo
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// LayerTreeSnapshotCommandLogResult Replays the layer snapshot and returns canvas log.
+// LayerTreeSnapshotCommandLogResult ...
 type LayerTreeSnapshotCommandLogResult struct {
-
 	// CommandLog The array of canvas function calls.
 	CommandLog []map[string]gson.JSON `json:"commandLog"`
 }
 
 // LayerTreeLayerPainted ...
 type LayerTreeLayerPainted struct {
-
 	// LayerID The id of the painted layer.
 	LayerID LayerTreeLayerID `json:"layerId"`
 
@@ -342,7 +322,6 @@ func (evt LayerTreeLayerPainted) ProtoEvent() string {
 
 // LayerTreeLayerTreeDidChange ...
 type LayerTreeLayerTreeDidChange struct {
-
 	// Layers (optional) Layer tree, absent if not in the comspositing mode.
 	Layers []*LayerTreeLayer `json:"layers,omitempty"`
 }

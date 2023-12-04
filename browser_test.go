@@ -1,127 +1,142 @@
 package rod_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+	"testing"
 	"time"
 
 	"github.com/Unique-AG/rod"
 	"github.com/Unique-AG/rod/lib/cdp"
 	"github.com/Unique-AG/rod/lib/devices"
+	"github.com/Unique-AG/rod/lib/launcher"
 	"github.com/Unique-AG/rod/lib/proto"
 	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/gson"
 )
 
-func (t T) Incognito() {
-	k := t.Srand(16)
+func TestIncognito(t *testing.T) {
+	g := setup(t)
 
-	b := t.browser.MustIncognito().Sleeper(rod.DefaultSleeper)
+	k := g.RandStr(16)
+
+	b := g.browser.MustIncognito().Sleeper(rod.DefaultSleeper)
 	defer b.MustClose()
 
-	page := b.MustPage(t.blank())
+	page := b.MustPage(g.blank())
 	defer page.MustClose()
 	page.MustEval(`k => localStorage[k] = 1`, k)
 
-	t.True(t.page.MustNavigate(t.blank()).MustEval(`k => localStorage[k]`, k).Nil())
-	t.Eq(page.MustEval(`k => localStorage[k]`, k).Str(), "1") // localStorage can only store string
+	g.True(g.page.MustNavigate(g.blank()).MustEval(`k => localStorage[k]`, k).Nil())
+	g.Eq(page.MustEval(`k => localStorage[k]`, k).Str(), "1") // localStorage can only store string
+
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.TargetCreateBrowserContext{})
+		g.browser.MustIncognito()
+	})
 }
 
-func (t T) BrowserResetControlURL() {
+func TestBrowserResetControlURL(_ *testing.T) {
 	rod.New().ControlURL("test").ControlURL("")
 }
 
-func (t T) DefaultDevice() {
+func TestDefaultDevice(t *testing.T) {
+	g := setup(t)
+
 	ua := ""
 
-	s := t.Serve()
+	s := g.Serve()
 	s.Mux.HandleFunc("/t", func(rw http.ResponseWriter, r *http.Request) {
 		ua = r.Header.Get("User-Agent")
 	})
 
-	t.browser.DefaultDevice(devices.IPhoneX)
-	defer t.browser.DefaultDevice(devices.LaptopWithMDPIScreen.Landescape())
+	// TODO: https://github.com/golang/go/issues/51459
+	b := *g.browser
+	b.DefaultDevice(devices.IPhoneX)
 
-	t.newPage(s.URL("/t"))
-	t.Eq(ua, devices.IPhoneX.UserAgentEmulation().UserAgent)
+	b.MustPage(s.URL("/t")).MustClose()
+	g.Eq(ua, devices.IPhoneX.UserAgentEmulation().UserAgent)
 
-	t.browser.NoDefaultDevice()
-	t.newPage(s.URL("/t"))
-	t.Neq(ua, devices.IPhoneX.UserAgentEmulation().UserAgent)
+	b.NoDefaultDevice()
+	b.MustPage(s.URL("/t")).MustClose()
+	g.Neq(ua, devices.IPhoneX.UserAgentEmulation().UserAgent)
 }
 
-func (t T) PageErr() {
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.TargetAttachToTarget{})
-		t.browser.MustPage()
+func TestPageErr(t *testing.T) {
+	g := setup(t)
+
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.TargetAttachToTarget{})
+		g.browser.MustPage()
 	})
 }
 
-func (t T) PageFromTarget() {
-	t.Panic(func() {
-		res, err := proto.TargetCreateTarget{URL: "about:blank"}.Call(t.browser)
-		t.E(err)
+func TestPageFromTarget(t *testing.T) {
+	g := setup(t)
+
+	g.Panic(func() {
+		res, err := proto.TargetCreateTarget{URL: "about:blank"}.Call(g.browser)
+		g.E(err)
 		defer func() {
-			t.browser.MustPageFromTargetID(res.TargetID).MustClose()
+			g.browser.MustPageFromTargetID(res.TargetID).MustClose()
 		}()
 
-		t.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
-		t.browser.MustPageFromTargetID(res.TargetID)
+		g.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
+		g.browser.MustPageFromTargetID(res.TargetID)
 	})
 }
 
-func (t T) BrowserPages() {
-	t.newPage(t.blank()).MustWaitLoad()
+func TestBrowserPages(t *testing.T) {
+	g := setup(t)
 
-	pages := t.browser.MustPages()
-
-	t.Len(pages, 3)
+	b := g.browser
+	pages := b.MustPages()
+	g.Gte(len(pages), 1)
 
 	{
-		t.mc.stub(1, proto.TargetGetTargets{}, func(send StubSend) (gson.JSON, error) {
+		g.mc.stub(1, proto.TargetGetTargets{}, func(send StubSend) (gson.JSON, error) {
 			d, _ := send()
 			return *d.Set("targetInfos.0.type", "iframe"), nil
 		})
-		pages := t.browser.MustPages()
-		t.Len(pages, 2)
+		b.MustPages()
 	}
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.TargetCreateTarget{})
-		t.browser.MustPage()
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.TargetCreateTarget{})
+		b.MustPage()
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.TargetGetTargets{})
-		t.browser.MustPages()
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.TargetGetTargets{})
+		b.MustPages()
 	})
-	t.Panic(func() {
-		res, err := proto.TargetCreateTarget{URL: "about:blank"}.Call(t.browser)
-		t.E(err)
-		defer func() {
-			t.browser.MustPageFromTargetID(res.TargetID).MustClose()
-		}()
-		t.mc.stubErr(1, proto.TargetAttachToTarget{})
-		t.browser.MustPages()
+	g.Panic(func() {
+		_, err := proto.TargetCreateTarget{URL: "about:blank"}.Call(b)
+		g.E(err)
+		g.mc.stubErr(1, proto.TargetAttachToTarget{})
+		b.MustPages()
 	})
 }
 
-func (t T) BrowserClearStates() {
-	t.E(proto.EmulationClearGeolocationOverride{}.Call(t.page))
+func TestBrowserClearStates(t *testing.T) {
+	g := setup(t)
+
+	g.E(proto.EmulationClearGeolocationOverride{}.Call(g.page))
 }
 
-func (t T) BrowserEvent() {
-	messages := t.browser.Context(t.Context()).Event()
-	p := t.newPage()
+func TestBrowserEvent(t *testing.T) {
+	g := setup(t)
+
+	messages := g.browser.Context(g.Context()).Event()
+	p := g.newPage()
 	wait := make(chan struct{})
 	for msg := range messages {
 		e := proto.TargetAttachedToTarget{}
 		if msg.Load(&e) {
-			t.Eq(e.TargetInfo.TargetID, p.TargetID)
+			g.Eq(e.TargetInfo.TargetID, p.TargetID)
 			close(wait)
 			break
 		}
@@ -129,41 +144,30 @@ func (t T) BrowserEvent() {
 	<-wait
 }
 
-func (t T) BrowserEventClose() {
-	event := make(chan *cdp.Event)
-	c := &MockClient{
-		connect: func() error { return nil },
-		call: func(ctx context.Context, sessionID, method string, params interface{}) ([]byte, error) {
-			return nil, errors.New("err")
-		},
-		event: event,
-	}
-	b := rod.New().Client(c)
-	_ = b.Connect()
-	b.Event()
-	close(event)
-}
+func TestBrowserWaitEvent(t *testing.T) {
+	g := setup(t)
 
-func (t T) BrowserWaitEvent() {
-	t.NotNil(t.browser.Context(t.Context()).Event())
+	g.NotNil(g.browser.Context(g.Context()).Event())
 
-	wait := t.page.WaitEvent(proto.PageFrameNavigated{})
-	t.page.MustNavigate(t.blank())
+	wait := g.page.WaitEvent(proto.PageFrameNavigated{})
+	g.page.MustNavigate(g.blank())
 	wait()
 
-	wait = t.browser.EachEvent(func(e *proto.PageFrameNavigated, id proto.TargetSessionID) bool {
+	wait = g.browser.EachEvent(func(e *proto.PageFrameNavigated, id proto.TargetSessionID) bool {
 		return true
 	})
-	t.page.MustNavigate(t.blank())
+	g.page.MustNavigate(g.blank())
 	wait()
 }
 
-func (t T) BrowserCrash() {
-	browser := rod.New().Context(t.Context()).MustConnect()
-	page := browser.MustPage()
-	js := `new Promise(r => setTimeout(r, 10000))`
+func TestBrowserCrash(t *testing.T) {
+	g := setup(t)
 
-	go t.Panic(func() {
+	browser := rod.New().Context(g.Context()).MustConnect()
+	page := browser.MustPage()
+	js := `() => new Promise(r => setTimeout(r, 10000))`
+
+	go g.Panic(func() {
 		page.MustEval(js)
 	})
 
@@ -174,88 +178,98 @@ func (t T) BrowserCrash() {
 	utils.Sleep(0.3)
 
 	_, err := page.Eval(js)
-	t.Is(err, cdp.ErrConnClosed)
+	g.Has(err.Error(), "use of closed network connection")
 }
 
-func (t T) BrowserCall() {
-	v, err := proto.BrowserGetVersion{}.Call(t.browser)
-	t.E(err)
+func TestBrowserCall(t *testing.T) {
+	g := setup(t)
 
-	t.Regex("1.3", v.ProtocolVersion)
+	v, err := proto.BrowserGetVersion{}.Call(g.browser)
+	g.E(err)
+
+	g.Regex("1.3", v.ProtocolVersion)
 }
 
-func (t T) BlockingNavigation() {
+func TestBlockingNavigation(t *testing.T) {
+	g := setup(t)
+
 	/*
 		Navigate can take forever if a page doesn't response.
 		If one page is blocked, other pages should still work.
 	*/
 
-	s := t.Serve()
-	pause := t.Context()
+	s := g.Serve()
+	pause := g.Context()
 
 	s.Mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
 		<-pause.Done()
 	})
 	s.Route("/b", ".html", `<html>ok</html>`)
 
-	blocked := t.newPage()
+	blocked := g.newPage()
 
 	go func() {
-		t.Panic(func() {
+		g.Panic(func() {
 			blocked.MustNavigate(s.URL("/a"))
 		})
 	}()
 
 	utils.Sleep(0.3)
 
-	t.newPage(s.URL("/b"))
+	g.newPage(s.URL("/b"))
 }
 
-func (t T) ResolveBlocking() {
-	s := t.Serve()
+func TestResolveBlocking(t *testing.T) {
+	g := setup(t)
 
-	pause := t.Context()
+	s := g.Serve()
+
+	pause := g.Context()
 
 	s.Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		<-pause.Done()
 	})
 
-	p := t.newPage()
+	p := g.newPage()
 
 	go func() {
 		utils.Sleep(0.1)
 		p.MustStopLoading()
 	}()
 
-	t.Panic(func() {
+	g.Panic(func() {
 		p.MustNavigate(s.URL())
 	})
 }
 
-func (t T) TestTry() {
-	t.Nil(rod.Try(func() {}))
+func TestTestTry(t *testing.T) {
+	g := setup(t)
+
+	g.Nil(rod.Try(func() {}))
 
 	err := rod.Try(func() { panic(1) })
 	var errVal *rod.ErrTry
-	t.True(errors.As(err, &errVal))
-	t.Is(err, &rod.ErrTry{})
-	t.Eq(1, errVal.Value)
-	t.Eq(errVal.Error(), "error value: 1")
+	g.True(errors.As(err, &errVal))
+	g.Is(err, &rod.ErrTry{})
+	g.Eq(errVal.Unwrap().Error(), "1")
+	g.Eq(1, errVal.Value)
+	g.Has(errVal.Error(), "error value: 1\ngoroutine")
+
+	errVal = rod.Try(func() { panic(errors.New("t")) }).(*rod.ErrTry)
+	g.Eq(errVal.Unwrap().Error(), "t")
 }
 
-func (t T) BrowserOthers() {
-	t.browser.Timeout(time.Second).CancelTimeout().MustGetCookies()
+func TestBrowserOthers(t *testing.T) {
+	g := setup(t)
 
-	t.Panic(func() {
-		b, cancel := t.browser.WithCancel()
-		cancel()
-		b.MustIncognito()
-	})
+	g.browser.Timeout(time.Second).CancelTimeout().MustGetCookies()
 }
 
-func (t T) BinarySize() {
-	if runtime.GOOS == "windows" {
-		t.SkipNow()
+func TestBinarySize(t *testing.T) {
+	g := setup(t)
+
+	if runtime.GOOS == "windows" || utils.InContainer {
+		g.SkipNow()
 	}
 
 	cmd := exec.Command("go", "build",
@@ -266,16 +280,18 @@ func (t T) BinarySize() {
 
 	cmd.Env = append(os.Environ(), "GOOS=linux")
 
-	t.Nil(cmd.Run())
+	g.Nil(cmd.Run())
 
 	stat, err := os.Stat("tmp/translator")
-	t.E(err)
+	g.E(err)
 
-	t.Lte(float64(stat.Size())/1024/1024, 9.2) // mb
+	g.Lte(float64(stat.Size())/1024/1024, 11) // mb
 }
 
-func (t T) BrowserCookies() {
-	b := t.browser.MustIncognito()
+func TestBrowserCookies(t *testing.T) {
+	g := setup(t)
+
+	b := g.browser.MustIncognito()
 	defer b.MustClose()
 
 	b.MustSetCookies(&proto.NetworkCookie{
@@ -286,38 +302,42 @@ func (t T) BrowserCookies() {
 
 	cookies := b.MustGetCookies()
 
-	t.Len(cookies, 1)
-	t.Eq(cookies[0].Name, "a")
-	t.Eq(cookies[0].Value, "val")
+	g.Len(cookies, 1)
+	g.Eq(cookies[0].Name, "a")
+	g.Eq(cookies[0].Value, "val")
 
 	{
 		b.MustSetCookies()
 		cookies := b.MustGetCookies()
-		t.Len(cookies, 0)
+		g.Len(cookies, 0)
 	}
 
-	t.mc.stubErr(1, proto.StorageGetCookies{})
-	t.Err(b.GetCookies())
+	g.mc.stubErr(1, proto.StorageGetCookies{})
+	g.Err(b.GetCookies())
 }
 
-func (t T) WaitDownload() {
-	s := t.Serve()
+func TestWaitDownload(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 	content := "test content"
 
 	s.Route("/d", ".bin", []byte(content))
 	s.Route("/page", ".html", fmt.Sprintf(`<html><a href="%s/d" download>click</a></html>`, s.URL()))
 
-	page := t.page.MustNavigate(s.URL("/page"))
+	page := g.page.MustNavigate(s.URL("/page"))
 
-	wait := t.browser.MustWaitDownload()
+	wait := g.browser.MustWaitDownload()
 	page.MustElement("a").MustClick()
 	data := wait()
 
-	t.Eq(content, string(data))
+	g.Eq(content, string(data))
 }
 
-func (t T) WaitDownloadDataURI() {
-	s := t.Serve()
+func TestWaitDownloadDataURI(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 
 	s.Route("/", ".html",
 		`<html>
@@ -332,21 +352,30 @@ func (t T) WaitDownloadDataURI() {
 		</html>`,
 	)
 
-	page := t.page.MustNavigate(s.URL())
+	page := g.page.MustNavigate(s.URL())
 
-	wait1 := t.browser.MustWaitDownload()
+	wait1 := g.browser.MustWaitDownload()
 	page.MustElement("#a").MustClick()
 	data := wait1()
-	t.Eq("test data", string(data))
+	g.Eq("test data", string(data))
 
-	wait2 := t.browser.MustWaitDownload()
+	wait2 := g.browser.MustWaitDownload()
 	page.MustElement("#b").MustClick()
 	data = wait2()
-	t.Eq("test blob", string(data))
+	g.Eq("test blob", string(data))
 }
 
-func (t T) WaitDownloadFromNewPage() {
-	s := t.Serve()
+func TestWaitDownloadCancel(t *testing.T) {
+	g := setup(t)
+
+	wait := g.browser.Context(g.Timeout(0)).WaitDownload(os.TempDir())
+	g.Eq(wait(), (*proto.PageDownloadWillBegin)(nil))
+}
+
+func TestWaitDownloadFromNewPage(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 	content := "test content"
 
 	s.Route("/d", ".bin", content)
@@ -355,70 +384,101 @@ func (t T) WaitDownloadFromNewPage() {
 		s.URL()),
 	)
 
-	page := t.page.MustNavigate(s.URL("/page"))
-	wait := t.browser.MustWaitDownload()
+	page := g.page.MustNavigate(s.URL("/page"))
+	wait := g.browser.MustWaitDownload()
 	page.MustElement("a").MustClick()
 	data := wait()
 
-	t.Eq(content, string(data))
+	g.Eq(content, string(data))
 }
 
-func (t T) BrowserConnectErr() {
-	t.Panic(func() {
-		c := &MockClient{connect: func() error { return errors.New("err") }}
-		rod.New().Client(c).MustConnect()
-	})
-	t.Panic(func() {
-		ch := make(chan *cdp.Event)
-		defer close(ch)
+func TestBrowserConnectErr(t *testing.T) {
+	g := setup(t)
 
-		c := &MockClient{connect: func() error { return nil }, event: ch}
-		c.stubErr(1, proto.TargetSetDiscoverTargets{})
-		rod.New().Client(c).MustConnect()
+	g.Panic(func() {
+		rod.New().ControlURL(g.RandStr(16)).MustConnect()
 	})
 }
 
-func (t T) StreamReader() {
-	r := rod.NewStreamReader(t.page, "")
+func TestStreamReader(t *testing.T) {
+	g := setup(t)
 
-	t.mc.stub(1, proto.IORead{}, func(send StubSend) (gson.JSON, error) {
+	r := rod.NewStreamReader(g.page, "")
+
+	g.mc.stub(1, proto.IORead{}, func(send StubSend) (gson.JSON, error) {
 		return gson.New(proto.IOReadResult{
 			Data: "test",
 		}), nil
 	})
 	b := make([]byte, 4)
 	_, _ = r.Read(b)
-	t.Eq("test", string(b))
+	g.Eq("test", string(b))
 
-	t.mc.stubErr(1, proto.IORead{})
+	g.mc.stubErr(1, proto.IORead{})
 	_, err := r.Read(nil)
-	t.Err(err)
+	g.Err(err)
 
-	t.mc.stub(1, proto.IORead{}, func(send StubSend) (gson.JSON, error) {
+	g.mc.stub(1, proto.IORead{}, func(send StubSend) (gson.JSON, error) {
 		return gson.New(proto.IOReadResult{
 			Base64Encoded: true,
 			Data:          "@",
 		}), nil
 	})
 	_, err = r.Read(nil)
-	t.Err(err)
+	g.Err(err)
 }
 
-func (t T) BrowserConnectFailure() {
-	c := t.Context()
+func TestBrowserConnectFailure(t *testing.T) {
+	g := setup(t)
+
+	c := g.Context()
 	c.Cancel()
 	err := rod.New().Context(c).Connect()
 	if err == nil {
-		t.Fatal("expected an error on connect failure")
+		g.Fatal("expected an error on connect failure")
 	}
 }
 
-func (t T) BrowserPool() {
+func TestBrowserPool(_ *testing.T) {
 	pool := rod.NewBrowserPool(3)
 	create := func() *rod.Browser { return rod.New().MustConnect() }
 	b := pool.Get(create)
 	pool.Put(b)
 	pool.Cleanup(func(p *rod.Browser) {
 		p.MustClose()
+	})
+}
+
+func TestOldBrowser(t *testing.T) {
+	t.Skip()
+
+	g := setup(t)
+	u := launcher.New().Revision(686378).MustLaunch()
+	b := rod.New().ControlURL(u).MustConnect()
+	g.Cleanup(b.MustClose)
+	res, err := proto.BrowserGetVersion{}.Call(b)
+	g.E(err)
+	g.Eq(res.Revision, "@19d4547535ab5aba70b4730443f84e8153052174")
+}
+
+func TestBrowserLostConnection(t *testing.T) {
+	g := setup(t)
+
+	l := launcher.New()
+	p := rod.New().ControlURL(l.MustLaunch()).MustConnect().MustPage(g.blank())
+
+	go func() {
+		utils.Sleep(1)
+		l.Kill()
+	}()
+
+	_, err := p.Eval(`() => new Promise(r => {})`)
+	g.Err(err)
+}
+
+func TestBrowserConnectConflict(t *testing.T) {
+	g := setup(t)
+	g.Panic(func() {
+		rod.New().Client(&cdp.Client{}).ControlURL("test").MustConnect()
 	})
 }

@@ -10,11 +10,16 @@ Query and modify DOM storage.
 
 */
 
+// DOMStorageSerializedStorageKey ...
+type DOMStorageSerializedStorageKey string
+
 // DOMStorageStorageID DOM Storage identifier.
 type DOMStorageStorageID struct {
+	// SecurityOrigin (optional) Security origin for the storage.
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
 
-	// SecurityOrigin Security origin for the storage.
-	SecurityOrigin string `json:"securityOrigin"`
+	// StorageKey (optional) Represents a key by which DOM Storage keys its CachedStorageAreas
+	StorageKey DOMStorageSerializedStorageKey `json:"storageKey,omitempty"`
 
 	// IsLocalStorage Whether the storage is local storage (not session storage).
 	IsLocalStorage bool `json:"isLocalStorage"`
@@ -25,7 +30,6 @@ type DOMStorageItem []string
 
 // DOMStorageClear ...
 type DOMStorageClear struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 }
@@ -39,8 +43,7 @@ func (m DOMStorageClear) Call(c Client) error {
 }
 
 // DOMStorageDisable Disables storage tracking, prevents storage events from being sent to the client.
-type DOMStorageDisable struct {
-}
+type DOMStorageDisable struct{}
 
 // ProtoReq name
 func (m DOMStorageDisable) ProtoReq() string { return "DOMStorage.disable" }
@@ -51,8 +54,7 @@ func (m DOMStorageDisable) Call(c Client) error {
 }
 
 // DOMStorageEnable Enables storage tracking, storage events will now be delivered to the client.
-type DOMStorageEnable struct {
-}
+type DOMStorageEnable struct{}
 
 // ProtoReq name
 func (m DOMStorageEnable) ProtoReq() string { return "DOMStorage.enable" }
@@ -64,7 +66,6 @@ func (m DOMStorageEnable) Call(c Client) error {
 
 // DOMStorageGetDOMStorageItems ...
 type DOMStorageGetDOMStorageItems struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 }
@@ -80,14 +81,12 @@ func (m DOMStorageGetDOMStorageItems) Call(c Client) (*DOMStorageGetDOMStorageIt
 
 // DOMStorageGetDOMStorageItemsResult ...
 type DOMStorageGetDOMStorageItemsResult struct {
-
 	// Entries ...
 	Entries []DOMStorageItem `json:"entries"`
 }
 
 // DOMStorageRemoveDOMStorageItem ...
 type DOMStorageRemoveDOMStorageItem struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 
@@ -105,7 +104,6 @@ func (m DOMStorageRemoveDOMStorageItem) Call(c Client) error {
 
 // DOMStorageSetDOMStorageItem ...
 type DOMStorageSetDOMStorageItem struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 
@@ -126,7 +124,6 @@ func (m DOMStorageSetDOMStorageItem) Call(c Client) error {
 
 // DOMStorageDomStorageItemAdded ...
 type DOMStorageDomStorageItemAdded struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 
@@ -144,7 +141,6 @@ func (evt DOMStorageDomStorageItemAdded) ProtoEvent() string {
 
 // DOMStorageDomStorageItemRemoved ...
 type DOMStorageDomStorageItemRemoved struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 
@@ -159,7 +155,6 @@ func (evt DOMStorageDomStorageItemRemoved) ProtoEvent() string {
 
 // DOMStorageDomStorageItemUpdated ...
 type DOMStorageDomStorageItemUpdated struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 
@@ -180,7 +175,6 @@ func (evt DOMStorageDomStorageItemUpdated) ProtoEvent() string {
 
 // DOMStorageDomStorageItemsCleared ...
 type DOMStorageDomStorageItemsCleared struct {
-
 	// StorageID ...
 	StorageID *DOMStorageStorageID `json:"storageId"`
 }

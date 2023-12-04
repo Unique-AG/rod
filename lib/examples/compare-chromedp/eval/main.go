@@ -1,3 +1,4 @@
+// Package main ...
 package main
 
 import (
@@ -12,7 +13,7 @@ import (
 func main() {
 	res := rod.New().MustConnect().
 		MustPage("https://www.google.com/").
-		MustElement("#main").
+		MustElement(`input`).
 		MustEval("() => Object.keys(window)")
 
 	log.Printf("window object keys: %v", res)

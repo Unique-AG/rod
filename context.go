@@ -7,11 +7,13 @@ import (
 	"github.com/Unique-AG/rod/lib/utils"
 )
 
-type timeoutContextKey struct{}
-type timeoutContextVal struct {
-	parent context.Context
-	cancel context.CancelFunc
-}
+type (
+	timeoutContextKey struct{}
+	timeoutContextVal struct {
+		parent context.Context
+		cancel context.CancelFunc
+	}
+)
 
 // Context returns a clone with the specified ctx for chained sub-operations
 func (b *Browser) Context(ctx context.Context) *Browser {
@@ -25,7 +27,7 @@ func (b *Browser) GetContext() context.Context {
 	return b.ctx
 }
 
-// Timeout returns a clone with the specified timeout context.Context chained sub-operations
+// Timeout returns a clone with the specified total timeout of all chained sub-operations
 func (b *Browser) Timeout(d time.Duration) *Browser {
 	ctx, cancel := context.WithTimeout(b.ctx, d)
 	return b.Context(context.WithValue(ctx, timeoutContextKey{}, &timeoutContextVal{b.ctx, cancel}))
@@ -53,7 +55,9 @@ func (b *Browser) Sleeper(sleeper func() utils.Sleeper) *Browser {
 
 // Context returns a clone with the specified ctx for chained sub-operations
 func (p *Page) Context(ctx context.Context) *Page {
+	p.helpersLock.Lock()
 	newObj := *p
+	p.helpersLock.Unlock()
 	newObj.ctx = ctx
 	return &newObj
 }
@@ -63,7 +67,7 @@ func (p *Page) GetContext() context.Context {
 	return p.ctx
 }
 
-// Timeout returns a clone with the specified timeout context.Context chained sub-operations
+// Timeout returns a clone with the specified total timeout of all chained sub-operations
 func (p *Page) Timeout(d time.Duration) *Page {
 	ctx, cancel := context.WithTimeout(p.ctx, d)
 	return p.Context(context.WithValue(ctx, timeoutContextKey{}, &timeoutContextVal{p.ctx, cancel}))
@@ -101,7 +105,7 @@ func (el *Element) GetContext() context.Context {
 	return el.ctx
 }
 
-// Timeout returns a clone with the specified timeout context.Context chained sub-operations
+// Timeout returns a clone with the specified total timeout of all chained sub-operations
 func (el *Element) Timeout(d time.Duration) *Element {
 	ctx, cancel := context.WithTimeout(el.ctx, d)
 	return el.Context(context.WithValue(ctx, timeoutContextKey{}, &timeoutContextVal{el.ctx, cancel}))

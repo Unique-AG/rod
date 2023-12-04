@@ -16,6 +16,7 @@ import (
 	"github.com/Unique-AG/rod/lib/launcher"
 	"github.com/Unique-AG/rod/lib/proto"
 	"github.com/Unique-AG/rod/lib/utils"
+	"github.com/ysmood/gson"
 )
 
 // This example opens https://github.com/, searches for "git",
@@ -28,13 +29,16 @@ func Example() {
 	defer browser.MustClose()
 
 	// Create a new page
-	page := browser.MustPage("https://github.com")
+	page := browser.MustPage("https://github.com").MustWaitStable()
+
+	// Trigger the search input with hotkey "/"
+	page.Keyboard.MustType(input.Slash)
 
 	// We use css selector to get the search input element and input "git"
-	page.MustElement("input").MustInput("git").MustPress(input.Enter)
+	page.MustElement("#query-builder-test").MustInput("git").MustType(input.Enter)
 
 	// Wait until css selector get the element then get the text content of it.
-	text := page.MustElement(".codesearch-results p").MustText()
+	text := page.MustElementR("span", "most widely used").MustText()
 
 	fmt.Println(text)
 
@@ -43,37 +47,37 @@ func Example() {
 	fmt.Println("Found", len(page.MustElements("input")), "input elements")
 
 	// Eval js on the page
-	page.MustEval(`console.log("hello world")`)
+	page.MustEval(`() => console.log("hello world")`)
 
 	// Pass parameters as json objects to the js function. This MustEval will result 3
 	fmt.Println("1 + 2 =", page.MustEval(`(a, b) => a + b`, 1, 2).Int())
 
 	// When eval on an element, "this" in the js is the current DOM element.
-	fmt.Println(page.MustElement("title").MustEval(`this.innerText`).String())
+	fmt.Println(page.MustElement("title").MustEval(`() => this.innerText`).String())
 
 	// Output:
 	// Git is the most widely used version control system.
-	// Found 5 input elements
+	// Found 11 input elements
 	// 1 + 2 = 3
-	// Search · git · GitHub
+	// Repository search results · GitHub
 }
 
 // Shows how to disable headless mode and debug.
 // Rod provides a lot of debug options, you can set them with setter methods or use environment variables.
 // Doc for environment variables: https://pkg.go.dev/github.com/Unique-AG/rod/lib/defaults
 func Example_disable_headless_to_debug() {
-	// Headless runs the browser on foreground, you can also use env "rod=show"
+	// Headless runs the browser on foreground, you can also use flag "-rod=show"
 	// Devtools opens the tab in each new tab opened automatically
 	l := launcher.New().
 		Headless(false).
 		Devtools(true)
 
-	defer l.Cleanup() // remove launcher.FlagUserDataDir
+	defer l.Cleanup()
 
 	url := l.MustLaunch()
 
 	// Trace shows verbose debug information for each action executed
-	// Slowmotion is a debug related function that waits 2 seconds between
+	// SlowMotion is a debug related function that waits 2 seconds between
 	// each action, making it easier to inspect what your code is doing.
 	browser := rod.New().
 		ControlURL(url).
@@ -83,14 +87,14 @@ func Example_disable_headless_to_debug() {
 
 	// ServeMonitor plays screenshots of each tab. This feature is extremely
 	// useful when debugging with headless mode.
-	// You can also enable it with env rod=monitor
+	// You can also enable it with flag "-rod=monitor"
 	launcher.Open(browser.ServeMonitor(""))
 
 	defer browser.MustClose()
 
 	page := browser.MustPage("https://github.com/")
 
-	page.MustElement("input").MustInput("git").MustPress(input.Enter)
+	page.MustElement("input").MustInput("git").MustType(input.Enter)
 
 	text := page.MustElement(".codesearch-results p").MustText()
 
@@ -99,11 +103,11 @@ func Example_disable_headless_to_debug() {
 	utils.Pause() // pause goroutine
 }
 
-// Rod use https://golang.org/pkg/context to handle cancelations for IO blocking operations, most times it's timeout.
+// Rod use https://golang.org/pkg/context to handle cancellations for IO blocking operations, most times it's timeout.
 // Context will be recursively passed to all sub-methods.
 // For example, methods like Page.Context(ctx) will return a clone of the page with the ctx,
 // all the methods of the returned page will use the ctx if they have IO blocking operations.
-// Page.Timeout or Page.WithCancel is just a shortcut for Page.Context.
+// [Page.Timeout] or [Page.WithCancel] is just a shortcut for Page.Context.
 // Of course, Browser or Element works the same way.
 func Example_context_and_timeout() {
 	page := rod.New().MustConnect().MustPage("https://github.com")
@@ -140,11 +144,32 @@ func Example_context_and_timeout() {
 	}
 }
 
+func Example_context_and_EachEvent() {
+	browser := rod.New().MustConnect()
+	defer browser.MustClose()
+
+	page := browser.MustPage("https://github.com").MustWaitLoad()
+
+	page, cancel := page.WithCancel()
+
+	go func() {
+		time.Sleep(time.Second)
+		cancel()
+	}()
+
+	// It's a blocking method, it will wait until the context is cancelled
+	page.EachEvent(func(e *proto.PageLifecycleEvent) {})()
+
+	if page.GetContext().Err() == context.Canceled {
+		fmt.Println("cancelled")
+	}
+}
+
 // We use "Must" prefixed functions to write example code. But in production you may want to use
 // the no-prefix version of them.
 // About why we use "Must" as the prefix, it's similar to https://golang.org/pkg/regexp/#MustCompile
 func Example_error_handling() {
-	page := rod.New().MustConnect().MustPage("https://example.com")
+	page := rod.New().MustConnect().MustPage("https://mdn.dev")
 
 	// We use Go's standard way to check error types, no magic.
 	check := func(err error) {
@@ -213,7 +238,7 @@ func Example_page_screenshot() {
 	// customization version
 	img, _ := page.Screenshot(true, &proto.PageCaptureScreenshot{
 		Format:  proto.PageCaptureScreenshotFormatJpeg,
-		Quality: 90,
+		Quality: gson.Int(90),
 		Clip: &proto.PageViewport{
 			X:      0,
 			Y:      0,
@@ -234,8 +259,8 @@ func Example_page_pdf() {
 
 	// customized version
 	pdf, _ := page.PDF(&proto.PagePrintToPDF{
-		PaperWidth:  8.5,
-		PaperHeight: 11,
+		PaperWidth:  gson.Num(8.5),
+		PaperHeight: gson.Num(11),
 		PageRanges:  "1-3",
 	})
 	_ = utils.OutputFile("my.pdf", pdf)
@@ -252,7 +277,7 @@ func Example_race_selectors() {
 	page := browser.MustPage("https://leetcode.com/accounts/login/")
 
 	page.MustElement("#id_login").MustInput(username)
-	page.MustElement("#id_password").MustInput(password).MustPress(input.Enter)
+	page.MustElement("#id_password").MustInput(password).MustType(input.Enter)
 
 	// It will keep retrying until one selector has found a match
 	elm := page.Race().Element(".nav-user-icon-base").MustHandle(func(e *rod.Element) {
@@ -291,20 +316,20 @@ func Example_wait_for_request() {
 	browser := rod.New().MustConnect()
 	defer browser.MustClose()
 
-	page := browser.MustPage("https://duckduckgo.com/")
+	page := browser.MustPage("https://www.wikipedia.org/").MustWaitLoad()
 
 	// Start to analyze request events
 	wait := page.MustWaitRequestIdle()
 
 	// This will trigger the search ajax request
-	page.MustElement("#search_form_input_homepage").MustClick().MustInput("lisp")
+	page.MustElement("#searchInput").MustClick().MustInput("lisp")
 
 	// Wait until there's no active requests
 	wait()
 
 	// We want to make sure that after waiting, there are some autocomplete
 	// suggestions available.
-	fmt.Println(len(page.MustElements(".search__autocomplete .acp")) > 0)
+	fmt.Println(len(page.MustElements(".suggestion-link")) > 0)
 
 	// Output: true
 }
@@ -339,8 +364,8 @@ func Example_customize_retry_strategy() {
 	fmt.Println(el.MustProperty("name"))
 
 	// Output:
-	// q
-	// q
+	// type
+	// type
 }
 
 // Shows how we can further customize the browser with the launcher library.
@@ -364,7 +389,7 @@ func Example_customize_browser_launch() {
 
 	// mitmproxy needs a cert config to support https. We use http here instead,
 	// for example
-	fmt.Println(browser.MustPage("https://example.com/").MustElement("title").MustText())
+	fmt.Println(browser.MustPage("https://mdn.dev/").MustElement("title").MustText())
 }
 
 // When rod doesn't have a feature that you need. You can easily call the cdp to achieve it.
@@ -407,7 +432,7 @@ func Example_handle_events() {
 	})()
 
 	wait := page.WaitEvent(&proto.PageLoadEventFired{})
-	page.MustNavigate("https://example.com")
+	page.MustNavigate("https://mdn.dev")
 	wait()
 
 	// EachEvent allows us to achieve the same functionality as above.
@@ -417,13 +442,13 @@ func Example_handle_events() {
 		wait := page.EachEvent(func(e *proto.PageLoadEventFired) (stop bool) {
 			return true
 		})
-		page.MustNavigate("https://example.com")
+		page.MustNavigate("https://mdn.dev")
 		wait()
 	}
 
 	// Or the for-loop style to handle events to do the same thing above.
 	if false {
-		page.MustNavigate("https://example.com")
+		page.MustNavigate("https://mdn.dev")
 
 		for msg := range page.Event() {
 			e := proto.PageLoadEventFired{}
@@ -433,7 +458,7 @@ func Example_handle_events() {
 		}
 	}
 
-	page.MustEval(`console.log("hello", "world")`)
+	page.MustEval(`() => console.log("hello", "world")`)
 
 	<-done
 
@@ -455,7 +480,9 @@ func Example_download_file() {
 // Shows how to intercept requests and modify
 // both the request and the response.
 // The entire process of hijacking one request:
-//    browser --req-> rod ---> server ---> rod --res-> browser
+//
+//	browser --req-> rod ---> server ---> rod --res-> browser
+//
 // The --req-> and --res-> are the parts that can be modified.
 func Example_hijack_requests() {
 	browser := rod.New().MustConnect()
@@ -483,7 +510,7 @@ func Example_hijack_requests() {
 
 	go router.Run()
 
-	browser.MustPage("https://go-rod.github.io").MustWait(`document.title === 'hi'`)
+	browser.MustPage("https://go-rod.github.io").MustWait(`() => document.title === 'hi'`)
 
 	fmt.Println("done")
 
@@ -494,7 +521,7 @@ func Example_hijack_requests() {
 func Example_eval_reuse_remote_object() {
 	page := rod.New().MustConnect().MustPage()
 
-	fn := page.MustEvaluate(rod.Eval(`Math.random`).ByObject())
+	fn := page.MustEvaluate(rod.Eval(`() => Math.random`).ByObject())
 
 	res := page.MustEval(`f => f()`, fn)
 
@@ -523,7 +550,7 @@ func Example_states() {
 	// true
 }
 
-// We can use PagePool to concurrently control and reuse pages.
+// We can use [rod.PagePool] to concurrently control and reuse pages.
 func ExamplePage_pool() {
 	browser := rod.New().MustConnect()
 	defer browser.MustClose()
@@ -539,9 +566,12 @@ func ExamplePage_pool() {
 
 	yourJob := func() {
 		page := pool.Get(create)
+
+		// Put the instance back to the pool after we're done,
+		// so the instance can be reused by other goroutines.
 		defer pool.Put(page)
 
-		page.MustNavigate("http://example.com").MustWaitLoad()
+		page.MustNavigate("http://mdn.dev").MustWaitLoad()
 		fmt.Println(page.MustInfo().Title)
 	}
 
@@ -560,10 +590,50 @@ func ExamplePage_pool() {
 	pool.Cleanup(func(p *rod.Page) { p.MustClose() })
 
 	// Output:
-	// Example Domain
-	// Example Domain
-	// Example Domain
-	// Example Domain
+	// mdn.dev
+	// mdn.dev
+	// mdn.dev
+	// mdn.dev
+}
+
+// We can use [rod.BrowserPool] to concurrently control and reuse browsers.
+func ExampleBrowser_pool() {
+	// Create a new browser pool with a limit of 3
+	pool := rod.NewBrowserPool(3)
+
+	// Create a function that returns a new browser instance
+	create := func() *rod.Browser {
+		browser := rod.New().MustConnect()
+		return browser
+	}
+
+	// Use the browser instances in separate goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// Get a browser instance from the pool
+			browser := pool.Get(create)
+
+			// Put the instance back to the pool after we're done,
+			// so the instance can be reused by other goroutines.
+			defer pool.Put(browser)
+
+			// Use the browser instance
+			page := browser.MustPage("https://www.google.com")
+			fmt.Println(page.MustInfo().Title)
+		}()
+	}
+
+	// Wait for all the goroutines to finish
+	wg.Wait()
+
+	// Cleanup the pool by closing all the browser instances
+	pool.Cleanup(func(p *rod.Browser) {
+		p.MustClose()
+	})
 }
 
 func Example_load_extension() {
@@ -578,9 +648,9 @@ func Example_load_extension() {
 		Headless(false).
 		MustLaunch()
 
-	page := rod.New().ControlURL(u).MustConnect().MustPage("http://example.com")
+	page := rod.New().ControlURL(u).MustConnect().MustPage("http://mdn.dev")
 
-	page.MustWait(`document.title === 'test-extension'`)
+	page.MustWait(`() => document.title === 'test-extension'`)
 
 	fmt.Println("ok")
 
@@ -589,15 +659,15 @@ func Example_load_extension() {
 }
 
 func Example_log_cdp_traffic() {
-	cdp := cdp.New(launcher.New().MustLaunch()).
-
+	cdp := cdp.New().
 		// Here we can customize how to log the requests, responses, and events transferred between Rod and the browser.
-		Logger(utils.Log(func(msg ...interface{}) {
-			// Such as use some fancy lib like github.com/davecgh/go-spew/spew to make the output more readable:
-			//     spew.Println(msg)
-			// Here we use %#v as an example.
-			fmt.Printf("%#v\n", msg)
-		}))
+		Logger(utils.Log(func(args ...interface{}) {
+			switch v := args[0].(type) {
+			case *cdp.Request:
+				fmt.Printf("id: %d", v.ID)
+			}
+		})).
+		Start(cdp.MustConnectWS(launcher.New().MustLaunch()))
 
-	rod.New().Client(cdp).MustConnect().MustPage("http://example.com")
+	rod.New().Client(cdp).MustConnect().MustPage("http://mdn.dev")
 }

@@ -89,7 +89,7 @@ func (ps Pages) Find(selector string) (*Page, error) {
 // FindByURL returns the page that has the url that matches the jsRegex
 func (ps Pages) FindByURL(jsRegex string) (*Page, error) {
 	for _, page := range ps {
-		res, err := page.Eval(`location.href`)
+		res, err := page.Eval(`() => location.href`)
 		if err != nil {
 			return nil, err
 		}
@@ -293,7 +293,7 @@ func (p *Page) Search(query string) (*SearchResult, error) {
 		// It's unnecessary to ask the user to explicitly call it.
 		//
 		// When the id is zero, it means the proto.DOMDocumentUpdated has fired which will
-		// invlidate all the existing NodeID. We have to call proto.DOMGetDocument
+		// invalidate all the existing NodeID. We have to call proto.DOMGetDocument
 		// to reset the remote browser's tracker.
 		if id == 0 {
 			_, _ = proto.DOMGetDocument{}.Call(p)
@@ -378,36 +378,52 @@ func (p *Page) Race() *RaceContext {
 	return &RaceContext{page: p}
 }
 
-// Element the doc is similar to MustElement
+// ElementFunc takes a custom function to determine race success
+func (rc *RaceContext) ElementFunc(fn func(*Page) (*Element, error)) *RaceContext {
+	rc.branches = append(rc.branches, &raceBranch{
+		condition: fn,
+	})
+	return rc
+}
+
+// Element is similar to [Page.Element]
 func (rc *RaceContext) Element(selector string) *RaceContext {
-	rc.branches = append(rc.branches, &raceBranch{
-		condition: func(p *Page) (*Element, error) { return p.Element(selector) },
+	return rc.ElementFunc(func(p *Page) (*Element, error) {
+		return p.Element(selector)
 	})
-	return rc
 }
 
-// ElementX the doc is similar to ElementX
+// ElementX is similar to [Page.ElementX]
 func (rc *RaceContext) ElementX(selector string) *RaceContext {
-	rc.branches = append(rc.branches, &raceBranch{
-		condition: func(p *Page) (*Element, error) { return p.ElementX(selector) },
+	return rc.ElementFunc(func(p *Page) (*Element, error) {
+		return p.ElementX(selector)
 	})
-	return rc
 }
 
-// ElementR the doc is similar to ElementR
+// ElementR is similar to [Page.ElementR]
 func (rc *RaceContext) ElementR(selector, regex string) *RaceContext {
-	rc.branches = append(rc.branches, &raceBranch{
-		condition: func(p *Page) (*Element, error) { return p.ElementR(selector, regex) },
+	return rc.ElementFunc(func(p *Page) (*Element, error) {
+		return p.ElementR(selector, regex)
 	})
-	return rc
 }
 
-// ElementByJS the doc is similar to MustElementByJS
+// ElementByJS is similar to [Page.ElementByJS]
 func (rc *RaceContext) ElementByJS(opts *EvalOptions) *RaceContext {
-	rc.branches = append(rc.branches, &raceBranch{
-		condition: func(p *Page) (*Element, error) { return p.ElementByJS(opts) },
+	return rc.ElementFunc(func(p *Page) (*Element, error) {
+		return p.ElementByJS(opts)
 	})
-	return rc
+}
+
+// Search is similar to [Page.Search]
+func (rc *RaceContext) Search(query string) *RaceContext {
+	return rc.ElementFunc(func(p *Page) (*Element, error) {
+		res, err := p.Search(query)
+		if err != nil {
+			return nil, err
+		}
+		res.Release()
+		return res.First, nil
+	})
 }
 
 // Handle adds a callback function to the most recent chained selector.
@@ -484,7 +500,7 @@ func (el *Element) ElementX(xPath string) (*Element, error) {
 
 // ElementByJS returns the element from the return value of the js
 func (el *Element) ElementByJS(opts *EvalOptions) (*Element, error) {
-	e, err := el.page.Sleeper(NotFoundSleeper).ElementByJS(opts.This(el.Object))
+	e, err := el.page.Context(el.ctx).Sleeper(NotFoundSleeper).ElementByJS(opts.This(el.Object))
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +509,7 @@ func (el *Element) ElementByJS(opts *EvalOptions) (*Element, error) {
 
 // Parent returns the parent element in the DOM tree
 func (el *Element) Parent() (*Element, error) {
-	return el.ElementByJS(Eval(`this.parentElement`))
+	return el.ElementByJS(Eval(`() => this.parentElement`))
 }
 
 // Parents that match the selector
@@ -503,12 +519,12 @@ func (el *Element) Parents(selector string) (Elements, error) {
 
 // Next returns the next sibling element in the DOM tree
 func (el *Element) Next() (*Element, error) {
-	return el.ElementByJS(Eval(`this.nextElementSibling`))
+	return el.ElementByJS(Eval(`() => this.nextElementSibling`))
 }
 
 // Previous returns the previous sibling element in the DOM tree
 func (el *Element) Previous() (*Element, error) {
-	return el.ElementByJS(Eval(`this.previousElementSibling`))
+	return el.ElementByJS(Eval(`() => this.previousElementSibling`))
 }
 
 // Elements returns all elements that match the css selector

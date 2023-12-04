@@ -16,7 +16,6 @@ type IOStreamHandle string
 
 // IOClose Close the stream, discard any temporary backing storage.
 type IOClose struct {
-
 	// Handle Handle of the stream to close.
 	Handle IOStreamHandle `json:"handle"`
 }
@@ -31,16 +30,15 @@ func (m IOClose) Call(c Client) error {
 
 // IORead Read a chunk of the stream
 type IORead struct {
-
 	// Handle Handle of the stream to read.
 	Handle IOStreamHandle `json:"handle"`
 
 	// Offset (optional) Seek to the specified offset before reading (if not specificed, proceed with offset
 	// following the last read). Some types of streams may only support sequential reads.
-	Offset int `json:"offset,omitempty"`
+	Offset *int `json:"offset,omitempty"`
 
 	// Size (optional) Maximum number of bytes to read (left upon the agent discretion if not specified).
-	Size int `json:"size,omitempty"`
+	Size *int `json:"size,omitempty"`
 }
 
 // ProtoReq name
@@ -52,9 +50,8 @@ func (m IORead) Call(c Client) (*IOReadResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// IOReadResult Read a chunk of the stream
+// IOReadResult ...
 type IOReadResult struct {
-
 	// Base64Encoded (optional) Set if the data is base64-encoded
 	Base64Encoded bool `json:"base64Encoded,omitempty"`
 
@@ -67,7 +64,6 @@ type IOReadResult struct {
 
 // IOResolveBlob Return UUID of Blob object specified by a remote object id.
 type IOResolveBlob struct {
-
 	// ObjectID Object id of a Blob object wrapper.
 	ObjectID RuntimeRemoteObjectID `json:"objectId"`
 }
@@ -81,9 +77,8 @@ func (m IOResolveBlob) Call(c Client) (*IOResolveBlobResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// IOResolveBlobResult Return UUID of Blob object specified by a remote object id.
+// IOResolveBlobResult ...
 type IOResolveBlobResult struct {
-
 	// UUID UUID of the specified Blob.
 	UUID string `json:"uuid"`
 }

@@ -1,3 +1,4 @@
+// Package main ...
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 
 	"github.com/Unique-AG/rod"
 	"github.com/Unique-AG/rod/lib/proto"
+	"github.com/ysmood/gson"
 )
 
 // This example demonstrates how to take a screenshot of a specific element and
@@ -14,18 +16,18 @@ func main() {
 	browser := rod.New().MustConnect()
 
 	// capture screenshot of an element
-	browser.MustPage("https://google.com").MustElement("#main").MustScreenshot("elementScreenshot.png")
+	browser.MustPage("https://google.com").MustElement("body div").MustScreenshot("elementScreenshot.png")
 
 	// capture entire browser viewport, returning jpg with quality=90
 	buf, err := browser.MustPage("https://brank.as/").Screenshot(true, &proto.PageCaptureScreenshot{
 		Format:  proto.PageCaptureScreenshotFormatJpeg,
-		Quality: 90,
+		Quality: gson.Int(90),
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile("fullScreenshot.png", buf, 0644)
+	err = ioutil.WriteFile("fullScreenshot.png", buf, 0o644)
 	if err != nil {
 		panic(err)
 	}

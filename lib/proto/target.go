@@ -41,7 +41,6 @@ const (
 
 // TargetTargetInfo ...
 type TargetTargetInfo struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 
@@ -68,11 +67,31 @@ type TargetTargetInfo struct {
 
 	// BrowserContextID (experimental) (optional) ...
 	BrowserContextID BrowserBrowserContextID `json:"browserContextId,omitempty"`
+
+	// Subtype (experimental) (optional) Provides additional details for specific target types. For example, for
+	// the type of "page", this may be set to "portal" or "prerender".
+	Subtype string `json:"subtype,omitempty"`
 }
+
+// TargetFilterEntry (experimental) A filter used by target query/discovery/auto-attach operations.
+type TargetFilterEntry struct {
+	// Exclude (optional) If set, causes exclusion of mathcing targets from the list.
+	Exclude bool `json:"exclude,omitempty"`
+
+	// Type (optional) If not present, matches any type.
+	Type string `json:"type,omitempty"`
+}
+
+// TargetTargetFilter (experimental) The entries in TargetFilter are matched sequentially against targets and
+// the first entry that matches determines if the target is included or not,
+// depending on the value of `exclude` field in the entry.
+// If filter is not specified, the one assumed is
+// [{type: "browser", exclude: true}, {type: "tab", exclude: true}, {}]
+// (i.e. include everything but `browser` and `tab`).
+type TargetTargetFilter []*TargetFilterEntry
 
 // TargetRemoteLocation (experimental) ...
 type TargetRemoteLocation struct {
-
 	// Host ...
 	Host string `json:"host"`
 
@@ -82,7 +101,6 @@ type TargetRemoteLocation struct {
 
 // TargetActivateTarget Activates (focuses) the target.
 type TargetActivateTarget struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 }
@@ -97,7 +115,6 @@ func (m TargetActivateTarget) Call(c Client) error {
 
 // TargetAttachToTarget Attaches to the target with given id.
 type TargetAttachToTarget struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 
@@ -116,16 +133,14 @@ func (m TargetAttachToTarget) Call(c Client) (*TargetAttachToTargetResult, error
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetAttachToTargetResult Attaches to the target with given id.
+// TargetAttachToTargetResult ...
 type TargetAttachToTargetResult struct {
-
 	// SessionID Id assigned to the session.
 	SessionID TargetSessionID `json:"sessionId"`
 }
 
 // TargetAttachToBrowserTarget (experimental) Attaches to the browser target, only uses flat sessionId mode.
-type TargetAttachToBrowserTarget struct {
-}
+type TargetAttachToBrowserTarget struct{}
 
 // ProtoReq name
 func (m TargetAttachToBrowserTarget) ProtoReq() string { return "Target.attachToBrowserTarget" }
@@ -136,16 +151,14 @@ func (m TargetAttachToBrowserTarget) Call(c Client) (*TargetAttachToBrowserTarge
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetAttachToBrowserTargetResult (experimental) Attaches to the browser target, only uses flat sessionId mode.
+// TargetAttachToBrowserTargetResult (experimental) ...
 type TargetAttachToBrowserTargetResult struct {
-
 	// SessionID Id assigned to the session.
 	SessionID TargetSessionID `json:"sessionId"`
 }
 
 // TargetCloseTarget Closes the target. If the target is a page that gets closed too.
 type TargetCloseTarget struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 }
@@ -159,9 +172,8 @@ func (m TargetCloseTarget) Call(c Client) (*TargetCloseTargetResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetCloseTargetResult Closes the target. If the target is a page that gets closed too.
+// TargetCloseTargetResult ...
 type TargetCloseTargetResult struct {
-
 	// Success (deprecated) Always set to true. If an error occurs, the response indicates protocol error.
 	Success bool `json:"success"`
 }
@@ -175,7 +187,6 @@ type TargetCloseTargetResult struct {
 // - `binding.send(json)` - a method to send messages over the remote debugging protocol
 // - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
 type TargetExposeDevToolsProtocol struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 
@@ -194,7 +205,6 @@ func (m TargetExposeDevToolsProtocol) Call(c Client) error {
 // TargetCreateBrowserContext (experimental) Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
 // one.
 type TargetCreateBrowserContext struct {
-
 	// DisposeOnDetach (optional) If specified, disposes this context when debugging session disconnects.
 	DisposeOnDetach bool `json:"disposeOnDetach,omitempty"`
 
@@ -203,6 +213,10 @@ type TargetCreateBrowserContext struct {
 
 	// ProxyBypassList (optional) Proxy bypass list, similar to the one passed to --proxy-bypass-list
 	ProxyBypassList string `json:"proxyBypassList,omitempty"`
+
+	// OriginsWithUniversalNetworkAccess (optional) An optional list of origins to grant unlimited cross-origin access to.
+	// Parts of the URL other than those constituting origin are ignored.
+	OriginsWithUniversalNetworkAccess []string `json:"originsWithUniversalNetworkAccess,omitempty"`
 }
 
 // ProtoReq name
@@ -214,17 +228,14 @@ func (m TargetCreateBrowserContext) Call(c Client) (*TargetCreateBrowserContextR
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetCreateBrowserContextResult (experimental) Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
-// one.
+// TargetCreateBrowserContextResult (experimental) ...
 type TargetCreateBrowserContextResult struct {
-
 	// BrowserContextID The id of the context created.
 	BrowserContextID BrowserBrowserContextID `json:"browserContextId"`
 }
 
 // TargetGetBrowserContexts (experimental) Returns all browser contexts created with `Target.createBrowserContext` method.
-type TargetGetBrowserContexts struct {
-}
+type TargetGetBrowserContexts struct{}
 
 // ProtoReq name
 func (m TargetGetBrowserContexts) ProtoReq() string { return "Target.getBrowserContexts" }
@@ -235,26 +246,24 @@ func (m TargetGetBrowserContexts) Call(c Client) (*TargetGetBrowserContextsResul
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetGetBrowserContextsResult (experimental) Returns all browser contexts created with `Target.createBrowserContext` method.
+// TargetGetBrowserContextsResult (experimental) ...
 type TargetGetBrowserContextsResult struct {
-
 	// BrowserContextIds An array of browser context ids.
 	BrowserContextIds []BrowserBrowserContextID `json:"browserContextIds"`
 }
 
 // TargetCreateTarget Creates a new page.
 type TargetCreateTarget struct {
-
 	// URL The initial URL the page will be navigated to. An empty string indicates about:blank.
 	URL string `json:"url"`
 
 	// Width (optional) Frame width in DIP (headless chrome only).
-	Width int `json:"width,omitempty"`
+	Width *int `json:"width,omitempty"`
 
 	// Height (optional) Frame height in DIP (headless chrome only).
-	Height int `json:"height,omitempty"`
+	Height *int `json:"height,omitempty"`
 
-	// BrowserContextID (optional) The browser context to create the page in.
+	// BrowserContextID (experimental) (optional) The browser context to create the page in.
 	BrowserContextID BrowserBrowserContextID `json:"browserContextId,omitempty"`
 
 	// EnableBeginFrameControl (experimental) (optional) Whether BeginFrames for this target will be controlled via DevTools (headless chrome only,
@@ -267,6 +276,9 @@ type TargetCreateTarget struct {
 	// Background (optional) Whether to create the target in background or foreground (chrome-only,
 	// false by default).
 	Background bool `json:"background,omitempty"`
+
+	// ForTab (experimental) (optional) Whether to create the target of type "tab".
+	ForTab bool `json:"forTab,omitempty"`
 }
 
 // ProtoReq name
@@ -278,16 +290,14 @@ func (m TargetCreateTarget) Call(c Client) (*TargetCreateTargetResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetCreateTargetResult Creates a new page.
+// TargetCreateTargetResult ...
 type TargetCreateTargetResult struct {
-
 	// TargetID The id of the page opened.
 	TargetID TargetTargetID `json:"targetId"`
 }
 
 // TargetDetachFromTarget Detaches session with given id.
 type TargetDetachFromTarget struct {
-
 	// SessionID (optional) Session to detach.
 	SessionID TargetSessionID `json:"sessionId,omitempty"`
 
@@ -306,7 +316,6 @@ func (m TargetDetachFromTarget) Call(c Client) error {
 // TargetDisposeBrowserContext (experimental) Deletes a BrowserContext. All the belonging pages will be closed without calling their
 // beforeunload hooks.
 type TargetDisposeBrowserContext struct {
-
 	// BrowserContextID ...
 	BrowserContextID BrowserBrowserContextID `json:"browserContextId"`
 }
@@ -321,7 +330,6 @@ func (m TargetDisposeBrowserContext) Call(c Client) error {
 
 // TargetGetTargetInfo (experimental) Returns information about a target.
 type TargetGetTargetInfo struct {
-
 	// TargetID (optional) ...
 	TargetID TargetTargetID `json:"targetId,omitempty"`
 }
@@ -335,15 +343,18 @@ func (m TargetGetTargetInfo) Call(c Client) (*TargetGetTargetInfoResult, error) 
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetGetTargetInfoResult (experimental) Returns information about a target.
+// TargetGetTargetInfoResult (experimental) ...
 type TargetGetTargetInfoResult struct {
-
 	// TargetInfo ...
 	TargetInfo *TargetTargetInfo `json:"targetInfo"`
 }
 
 // TargetGetTargets Retrieves a list of available targets.
 type TargetGetTargets struct {
+	// Filter (experimental) (optional) Only targets matching filter will be reported. If filter is not specified
+	// and target discovery is currently enabled, a filter used for target discovery
+	// is used for consistency.
+	Filter TargetTargetFilter `json:"filter,omitempty"`
 }
 
 // ProtoReq name
@@ -355,9 +366,8 @@ func (m TargetGetTargets) Call(c Client) (*TargetGetTargetsResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// TargetGetTargetsResult Retrieves a list of available targets.
+// TargetGetTargetsResult ...
 type TargetGetTargetsResult struct {
-
 	// TargetInfos The list of targets.
 	TargetInfos []*TargetTargetInfo `json:"targetInfos"`
 }
@@ -366,7 +376,6 @@ type TargetGetTargetsResult struct {
 // Consider using flat mode instead; see commands attachToTarget, setAutoAttach,
 // and crbug.com/991325.
 type TargetSendMessageToTarget struct {
-
 	// Message ...
 	Message string `json:"message"`
 
@@ -388,8 +397,9 @@ func (m TargetSendMessageToTarget) Call(c Client) error {
 // TargetSetAutoAttach (experimental) Controls whether to automatically attach to new targets which are considered to be related to
 // this one. When turned on, attaches to all existing related targets as well. When turned off,
 // automatically detaches from all currently attached targets.
+// This also clears all targets added by `autoAttachRelated` from the list of targets to watch
+// for creation of related targets.
 type TargetSetAutoAttach struct {
-
 	// AutoAttach Whether to auto-attach to related targets.
 	AutoAttach bool `json:"autoAttach"`
 
@@ -401,6 +411,9 @@ type TargetSetAutoAttach struct {
 	// We plan to make this the default, deprecate non-flattened mode,
 	// and eventually retire it. See crbug.com/991325.
 	Flatten bool `json:"flatten,omitempty"`
+
+	// Filter (experimental) (optional) Only targets matching filter will be attached.
+	Filter TargetTargetFilter `json:"filter,omitempty"`
 }
 
 // ProtoReq name
@@ -411,12 +424,40 @@ func (m TargetSetAutoAttach) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
+// TargetAutoAttachRelated (experimental) Adds the specified target to the list of targets that will be monitored for any related target
+// creation (such as child frames, child workers and new versions of service worker) and reported
+// through `attachedToTarget`. The specified target is also auto-attached.
+// This cancels the effect of any previous `setAutoAttach` and is also cancelled by subsequent
+// `setAutoAttach`. Only available at the Browser target.
+type TargetAutoAttachRelated struct {
+	// TargetID ...
+	TargetID TargetTargetID `json:"targetId"`
+
+	// WaitForDebuggerOnStart Whether to pause new targets when attaching to them. Use `Runtime.runIfWaitingForDebugger`
+	// to run paused targets.
+	WaitForDebuggerOnStart bool `json:"waitForDebuggerOnStart"`
+
+	// Filter (experimental) (optional) Only targets matching filter will be attached.
+	Filter TargetTargetFilter `json:"filter,omitempty"`
+}
+
+// ProtoReq name
+func (m TargetAutoAttachRelated) ProtoReq() string { return "Target.autoAttachRelated" }
+
+// Call sends the request
+func (m TargetAutoAttachRelated) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
 // TargetSetDiscoverTargets Controls whether to discover available targets and notify via
 // `targetCreated/targetInfoChanged/targetDestroyed` events.
 type TargetSetDiscoverTargets struct {
-
 	// Discover Whether to discover available targets.
 	Discover bool `json:"discover"`
+
+	// Filter (experimental) (optional) Only targets matching filter will be attached. If `discover` is false,
+	// `filter` must be omitted or empty.
+	Filter TargetTargetFilter `json:"filter,omitempty"`
 }
 
 // ProtoReq name
@@ -430,7 +471,6 @@ func (m TargetSetDiscoverTargets) Call(c Client) error {
 // TargetSetRemoteLocations (experimental) Enables target discovery for the specified locations, when `setDiscoverTargets` was set to
 // `true`.
 type TargetSetRemoteLocations struct {
-
 	// Locations List of remote locations.
 	Locations []*TargetRemoteLocation `json:"locations"`
 }
@@ -445,7 +485,6 @@ func (m TargetSetRemoteLocations) Call(c Client) error {
 
 // TargetAttachedToTarget (experimental) Issued when attached to target because of auto-attach or `attachToTarget` command.
 type TargetAttachedToTarget struct {
-
 	// SessionID Identifier assigned to the session used to send/receive messages.
 	SessionID TargetSessionID `json:"sessionId"`
 
@@ -464,7 +503,6 @@ func (evt TargetAttachedToTarget) ProtoEvent() string {
 // TargetDetachedFromTarget (experimental) Issued when detached from target for any reason (including `detachFromTarget` command). Can be
 // issued multiple times per target if multiple sessions have been attached to it.
 type TargetDetachedFromTarget struct {
-
 	// SessionID Detached session identifier.
 	SessionID TargetSessionID `json:"sessionId"`
 
@@ -480,7 +518,6 @@ func (evt TargetDetachedFromTarget) ProtoEvent() string {
 // TargetReceivedMessageFromTarget Notifies about a new protocol message received from the session (as reported in
 // `attachedToTarget` event).
 type TargetReceivedMessageFromTarget struct {
-
 	// SessionID Identifier of a session which sends a message.
 	SessionID TargetSessionID `json:"sessionId"`
 
@@ -498,7 +535,6 @@ func (evt TargetReceivedMessageFromTarget) ProtoEvent() string {
 
 // TargetTargetCreated Issued when a possible inspection target is created.
 type TargetTargetCreated struct {
-
 	// TargetInfo ...
 	TargetInfo *TargetTargetInfo `json:"targetInfo"`
 }
@@ -510,7 +546,6 @@ func (evt TargetTargetCreated) ProtoEvent() string {
 
 // TargetTargetDestroyed Issued when a target is destroyed.
 type TargetTargetDestroyed struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 }
@@ -522,7 +557,6 @@ func (evt TargetTargetDestroyed) ProtoEvent() string {
 
 // TargetTargetCrashed Issued when a target has crashed.
 type TargetTargetCrashed struct {
-
 	// TargetID ...
 	TargetID TargetTargetID `json:"targetId"`
 
@@ -541,7 +575,6 @@ func (evt TargetTargetCrashed) ProtoEvent() string {
 // TargetTargetInfoChanged Issued when some information about a target has changed. This only happens between
 // `targetCreated` and `targetDestroyed`.
 type TargetTargetInfoChanged struct {
-
 	// TargetInfo ...
 	TargetInfo *TargetTargetInfo `json:"targetInfo"`
 }

@@ -18,11 +18,12 @@ func ExampleClient() {
 	url := launcher.New().MustLaunch()
 
 	// create a controller
-	client := cdp.New(url).MustConnect(ctx)
+	client := cdp.New().Start(cdp.MustConnectWS(url))
 
 	go func() {
 		for range client.Event() {
 			// you must consume the events
+			utils.Noop()
 		}
 	}()
 
@@ -40,4 +41,17 @@ func ExampleClient() {
 	_ = proto.BrowserClose{}.Call(client)
 
 	// Output: 32
+}
+
+func Example_customize_cdp_log() {
+	ws := cdp.MustConnectWS(launcher.New().MustLaunch())
+
+	cdp.New().
+		Logger(utils.Log(func(args ...interface{}) {
+			switch v := args[0].(type) {
+			case *cdp.Request:
+				fmt.Printf("id: %d", v.ID)
+			}
+		})).
+		Start(ws)
 }

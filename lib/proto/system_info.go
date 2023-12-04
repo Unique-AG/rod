@@ -16,7 +16,6 @@ The SystemInfo domain defines methods and events for querying low-level system i
 
 // SystemInfoGPUDevice Describes a single graphics processor (GPU).
 type SystemInfoGPUDevice struct {
-
 	// VendorID PCI ID of the GPU vendor, if available; 0 otherwise.
 	VendorID float64 `json:"vendorId"`
 
@@ -24,10 +23,10 @@ type SystemInfoGPUDevice struct {
 	DeviceID float64 `json:"deviceId"`
 
 	// SubSysID (optional) Sub sys ID of the GPU, only available on Windows.
-	SubSysID float64 `json:"subSysId,omitempty"`
+	SubSysID *float64 `json:"subSysId,omitempty"`
 
 	// Revision (optional) Revision of the GPU, only available on Windows.
-	Revision float64 `json:"revision,omitempty"`
+	Revision *float64 `json:"revision,omitempty"`
 
 	// VendorString String description of the GPU vendor, if the PCI ID is not available.
 	VendorString string `json:"vendorString"`
@@ -44,7 +43,6 @@ type SystemInfoGPUDevice struct {
 
 // SystemInfoSize Describes the width and height dimensions of an entity.
 type SystemInfoSize struct {
-
 	// Width Width in pixels.
 	Width int `json:"width"`
 
@@ -55,7 +53,6 @@ type SystemInfoSize struct {
 // SystemInfoVideoDecodeAcceleratorCapability Describes a supported video decoding profile with its associated minimum and
 // maximum resolutions.
 type SystemInfoVideoDecodeAcceleratorCapability struct {
-
 	// Profile Video codec profile that is supported, e.g. VP9 Profile 2.
 	Profile string `json:"profile"`
 
@@ -69,7 +66,6 @@ type SystemInfoVideoDecodeAcceleratorCapability struct {
 // SystemInfoVideoEncodeAcceleratorCapability Describes a supported video encoding profile with its associated maximum
 // resolution and maximum framerate.
 type SystemInfoVideoEncodeAcceleratorCapability struct {
-
 	// Profile Video codec profile that is supported, e.g H264 Main.
 	Profile string `json:"profile"`
 
@@ -116,7 +112,6 @@ const (
 // SystemInfoImageDecodeAcceleratorCapability Describes a supported image decoding profile with its associated minimum and
 // maximum resolutions and subsampling.
 type SystemInfoImageDecodeAcceleratorCapability struct {
-
 	// ImageType Image coded, e.g. Jpeg.
 	ImageType SystemInfoImageType `json:"imageType"`
 
@@ -132,7 +127,6 @@ type SystemInfoImageDecodeAcceleratorCapability struct {
 
 // SystemInfoGPUInfo Provides information about the GPU(s) on the system.
 type SystemInfoGPUInfo struct {
-
 	// Devices The graphics devices on the system. Element 0 is the primary GPU.
 	Devices []*SystemInfoGPUDevice `json:"devices"`
 
@@ -157,7 +151,6 @@ type SystemInfoGPUInfo struct {
 
 // SystemInfoProcessInfo Represents process info.
 type SystemInfoProcessInfo struct {
-
 	// Type Specifies process type.
 	Type string `json:"type"`
 
@@ -170,8 +163,7 @@ type SystemInfoProcessInfo struct {
 }
 
 // SystemInfoGetInfo Returns information about the system.
-type SystemInfoGetInfo struct {
-}
+type SystemInfoGetInfo struct{}
 
 // ProtoReq name
 func (m SystemInfoGetInfo) ProtoReq() string { return "SystemInfo.getInfo" }
@@ -182,9 +174,8 @@ func (m SystemInfoGetInfo) Call(c Client) (*SystemInfoGetInfoResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// SystemInfoGetInfoResult Returns information about the system.
+// SystemInfoGetInfoResult ...
 type SystemInfoGetInfoResult struct {
-
 	// Gpu Information about the GPUs on the system.
 	Gpu *SystemInfoGPUInfo `json:"gpu"`
 
@@ -201,9 +192,29 @@ type SystemInfoGetInfoResult struct {
 	CommandLine string `json:"commandLine"`
 }
 
-// SystemInfoGetProcessInfo Returns information about all running processes.
-type SystemInfoGetProcessInfo struct {
+// SystemInfoGetFeatureState Returns information about the feature state.
+type SystemInfoGetFeatureState struct {
+	// FeatureState ...
+	FeatureState string `json:"featureState"`
 }
+
+// ProtoReq name
+func (m SystemInfoGetFeatureState) ProtoReq() string { return "SystemInfo.getFeatureState" }
+
+// Call the request
+func (m SystemInfoGetFeatureState) Call(c Client) (*SystemInfoGetFeatureStateResult, error) {
+	var res SystemInfoGetFeatureStateResult
+	return &res, call(m.ProtoReq(), m, &res, c)
+}
+
+// SystemInfoGetFeatureStateResult ...
+type SystemInfoGetFeatureStateResult struct {
+	// FeatureEnabled ...
+	FeatureEnabled bool `json:"featureEnabled"`
+}
+
+// SystemInfoGetProcessInfo Returns information about all running processes.
+type SystemInfoGetProcessInfo struct{}
 
 // ProtoReq name
 func (m SystemInfoGetProcessInfo) ProtoReq() string { return "SystemInfo.getProcessInfo" }
@@ -214,9 +225,8 @@ func (m SystemInfoGetProcessInfo) Call(c Client) (*SystemInfoGetProcessInfoResul
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// SystemInfoGetProcessInfoResult Returns information about all running processes.
+// SystemInfoGetProcessInfoResult ...
 type SystemInfoGetProcessInfoResult struct {
-
 	// ProcessInfo An array of process info blocks.
 	ProcessInfo []*SystemInfoProcessInfo `json:"processInfo"`
 }

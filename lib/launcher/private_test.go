@@ -2,7 +2,6 @@ package launcher
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -30,62 +29,58 @@ func HostTest(host string) Host {
 	}
 }
 
-type T struct {
-	got.G
-}
+var setup = got.Setup(nil)
 
-func TestPrivate(t *testing.T) {
-	NewBrowser().MustGet() // preload browser to local
+func TestToHTTP(t *testing.T) {
+	g := setup(t)
 
-	got.Each(t, T{})
-}
-
-func (t T) ToHTTP() {
 	u, _ := url.Parse("wss://a.com")
-	t.Eq("https", toHTTP(*u).Scheme)
+	g.Eq("https", toHTTP(*u).Scheme)
 
 	u, _ = url.Parse("ws://a.com")
-	t.Eq("http", toHTTP(*u).Scheme)
+	g.Eq("http", toHTTP(*u).Scheme)
 }
 
-func (t T) ToWS() {
+func TestToWS(t *testing.T) {
+	g := setup(t)
+
 	u, _ := url.Parse("https://a.com")
-	t.Eq("wss", toWS(*u).Scheme)
+	g.Eq("wss", toWS(*u).Scheme)
 
 	u, _ = url.Parse("http://a.com")
-	t.Eq("ws", toWS(*u).Scheme)
+	g.Eq("ws", toWS(*u).Scheme)
 }
 
-func (t T) Unzip() {
-	t.Err(unzip(ioutil.Discard, "", ""))
-}
+func TestLaunchOptions(t *testing.T) {
+	g := setup(t)
 
-func (t T) LaunchOptions() {
 	defaults.Show = true
 	defaults.Devtools = true
 	inContainer = true
 
 	// restore
 	defer func() {
-		defaults.ResetWithEnv("")
+		defaults.ResetWith("")
 		inContainer = utils.InContainer
 	}()
 
 	l := New()
 
-	t.False(l.Has(flags.Headless))
+	g.False(l.Has(flags.Headless))
 
-	t.True(l.Has(flags.NoSandbox))
+	g.True(l.Has(flags.NoSandbox))
 
-	t.True(l.Has("auto-open-devtools-for-tabs"))
+	g.True(l.Has("auto-open-devtools-for-tabs"))
 }
 
-func (t T) GetURLErr() {
+func TestGetURLErr(t *testing.T) {
+	g := setup(t)
+
 	l := New()
 
 	l.ctxCancel()
 	_, err := l.getURL()
-	t.Err(err)
+	g.Err(err)
 
 	l = New()
 	l.parser.lock.Lock()
@@ -93,22 +88,23 @@ func (t T) GetURLErr() {
 	l.parser.lock.Unlock()
 	close(l.exit)
 	_, err = l.getURL()
-	t.Eq("[launcher] Failed to get the debug url: err", err.Error())
+	g.Eq("[launcher] Failed to get the debug url: err", err.Error())
 }
 
-func (t T) RemoteLaunch() {
-	ctx := t.Timeout(5 * time.Second)
+func TestManaged(t *testing.T) {
+	g := setup(t)
 
-	s := got.New(t).Serve()
+	ctx := g.Timeout(5 * time.Second)
+
+	s := got.New(g).Serve()
 	rl := NewManager()
 	s.Mux.Handle("/", rl)
 
 	l := MustNewManaged(s.URL()).KeepUserDataDir().Delete(flags.KeepUserDataDir)
-	client := l.Client()
-	b := client.MustConnect(ctx)
-	t.E(b.Call(ctx, "", "Browser.getVersion", nil))
+	c := l.MustClient()
+	g.E(c.Call(ctx, "", "Browser.getVersion", nil))
 	utils.Sleep(1)
-	_, _ = b.Call(ctx, "", "Browser.crash", nil)
+	_, _ = c.Call(ctx, "", "Browser.crash", nil)
 	dir := l.Get(flags.UserDataDir)
 
 	for ctx.Err() == nil {
@@ -118,55 +114,45 @@ func (t T) RemoteLaunch() {
 			break
 		}
 	}
-	t.Err(os.Stat(dir))
+	g.Err(os.Stat(dir))
 
-	err := MustNewManaged(s.URL()).Bin("go").Client().Connect(ctx).(*cdp.ErrBadHandshake)
-	t.Eq(err.Body, "not allowed rod-bin path: go")
+	u, h := MustNewManaged(s.URL()).Bin("go").ClientHeader()
+	_, err := cdp.StartWithURL(ctx, u, h)
+	g.Eq(err.(*cdp.ErrBadHandshake).Body, "[rod-manager] not allowed rod-bin path: go (use --allow-all to disable the protection)")
 }
 
-func (t T) LaunchErrs() {
+func TestLaunchErrs(t *testing.T) {
+	g := setup(t)
+
 	l := New().Bin("echo")
 	_, err := l.Launch()
-	t.Err(err)
+	g.Err(err)
 
-	s := t.Serve()
+	s := g.Serve()
 	s.Route("/", "", nil)
 	l = New().Bin("")
-	l.browser.Logger = ioutil.Discard
-	l.browser.Dir = filepath.Join("tmp", "browser-from-mirror", t.Srand(16))
+	l.browser.Logger = utils.LoggerQuiet
+	l.browser.RootDir = filepath.Join("tmp", "browser-from-mirror", g.RandStr(16))
 	l.browser.Hosts = []Host{HostTest(s.URL())}
 	_, err = l.Launch()
-	t.Err(err)
+	g.Err(err)
 }
 
-func (t T) Progresser() {
-	p := progresser{size: 100, logger: ioutil.Discard}
+func TestURLParserErr(t *testing.T) {
+	g := setup(t)
 
-	t.E(p.Write(make([]byte, 100)))
-	t.E(p.Write(make([]byte, 100)))
-	t.E(p.Write(make([]byte, 100)))
-}
-
-func (t T) URLParserErr() {
 	u := &URLParser{
 		Buffer: "error",
 		lock:   &sync.Mutex{},
 	}
 
-	t.Eq(u.Err().Error(), "[launcher] Failed to get the debug url: error")
+	g.Eq(u.Err().Error(), "[launcher] Failed to get the debug url: error")
 
-	u.Buffer = "/tmp/rod/chromium-818858/chrome-linux/chrome: error while loading shared libraries: libgobject-2.0.so.0: cannot open shared object file: No such file or directory"
-	t.Eq(u.Err().Error(), "[launcher] Failed to launch the browser, the doc might help https://go-rod.github.io/#/compatibility?id=os: /tmp/rod/chromium-818858/chrome-linux/chrome: error while loading shared libraries: libgobject-2.0.so.0: cannot open shared object file: No such file or directory")
+	u.Buffer = "/tmp/rod/chromium-818858/chrome: error while loading shared libraries: libgobject-2.0.so.0: cannot open shared object file: No such file or directory"
+	g.Eq(u.Err().Error(), "[launcher] Failed to launch the browser, the doc might help https://go-rod.github.io/#/compatibility?id=os: /tmp/rod/chromium-818858/chrome: error while loading shared libraries: libgobject-2.0.so.0: cannot open shared object file: No such file or directory")
 }
 
-func (t T) BrowserDownloadErr() {
-	b := NewBrowser()
-	b.Logger = ioutil.Discard
-	malURL := "https://npm.taobao.org/mirrors/chromium-browser-snapshots//869685/"
-	t.Has(b.download(t.Context(), malURL).Error(), "failed to download the browser: 200")
-}
-
-func (t T) TestOpen() {
+func TestTestOpen(_ *testing.T) {
 	openExec = func(name string, arg ...string) *exec.Cmd {
 		cmd := exec.Command("not-exists")
 		cmd.Process = &os.Process{}
@@ -175,4 +161,21 @@ func (t T) TestOpen() {
 	defer func() { openExec = exec.Command }()
 
 	Open("about:blank")
+}
+
+func TestLaunchClient(t *testing.T) {
+	g := setup(t)
+
+	ctx := g.Timeout(5 * time.Second)
+
+	s := got.New(g).Serve()
+	rl := NewManager()
+	s.Mux.Handle("/", rl)
+
+	l := MustNewManaged(s.URL()).KeepUserDataDir().Delete(flags.KeepUserDataDir)
+	c, err := l.Client()
+	if err != nil {
+		g.Err(err)
+	}
+	g.E(c.Call(ctx, "", "Browser.getVersion", nil))
 }

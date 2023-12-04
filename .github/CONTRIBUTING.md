@@ -6,6 +6,10 @@ At the early stage of this project, we will use a simple model to promote member
 Maintainers will have all the permissions of this project, only the first 2 maintainers are granted by the owner, the standard is whether the member is good enough to review others' code, then we will start to elect
 new maintainers by voting in the public issue. If no one votes down and 2/3 votes up then an election passes.
 
+## Contribute Doc
+
+Check [here](https://github.com/go-rod/go-rod.github.io/blob/main/contribute-doc.md).
+
 ## Terminology
 
 When we talk about type in the doc we use [gopls](https://github.com/golang/tools/tree/master/gopls) symbol query syntax. For example, when we say `rod.Page.PDF`, you can run the below to locate the file and line of it:
@@ -14,7 +18,7 @@ When we talk about type in the doc we use [gopls](https://github.com/golang/tool
 gopls workspace_symbol -matcher=fuzzy rod.Page.PDF$
 ```
 
-- `cdp`: It's the short for Chrome Devtools Protocol
+- `cdp`: It's short for Chrome Devtools Protocol
 
 ## How it works
 
@@ -32,7 +36,13 @@ Object model:
 
 ## Run tests
 
-No magic, just `go test`.
+First, launch a test shell for rod:
+
+```bash
+go run ./lib/utils/shell
+```
+
+Then, no magic, just `go test`. Read the test template [rod_test.go](../rod_test.go) to get started.
 
 The entry point of tests is [setup_test.go](../setup_test.go). All the test helpers are defined in it.
 
@@ -40,26 +50,26 @@ The `cdp` requests of each test will be recorded and output to folder `tmp/cdp-l
 [artifacts](https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts) so that we can download
 them for debugging.
 
-### Filter tests
+Usually, you only need to run the tests that you are working on, for example:
 
-Use regex: `go test -run /^Click$`.
+```bash
+go test -run=^TestClick$
+```
 
-Test a specific package: `go test ./lib/launcher`.
-
-Run all tests: `go test ./...`
+The above will only run TestClick.
 
 ### Disable headless mode
 
 ```bash
-rod=show,trace,slow=2s go test -run /Click
+go test -rod=show
 ```
 
-Check type `defaults.ResetWithEnv` for how it works.
+Check [defaults](../lib/defaults/defaults.go) for other available options.
 
 ### Lint project
 
 You can run all commands inside Docker so that you don't have to install all the development dependencies.
-Check [Use Docker for development](#Use-Docker-for-development) for more info.
+Check [Use Docker for development](#use-docker-for-development) for more info.
 
 ```bash
 go generate # only required for first time
@@ -98,7 +108,7 @@ There are several helper functions for it:
 
 1. Run lint in the container: `go run ./lib/utils/lint`
 
-1. Run tests in the container: `go test -run /Click`
+1. Run tests in the container: `go test`
 
 1. After you exit the container with `exit`, you can restart it by: `docker start -i rod`
 

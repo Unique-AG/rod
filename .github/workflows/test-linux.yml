@@ -1,4 +1,5 @@
 name: Test Linux
+
 on:
   push:
     branches:
@@ -14,19 +15,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/setup-node@v1
-
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-node@v2
         with:
-          go-version: 1.17
+          node-version: 16
 
-      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.1
+
+      - uses: actions/checkout@v3
 
       - run: go generate
 
-      - run: go test -race -coverprofile=coverage.out ./...
+      - run: go run ./lib/utils/ci-test -race -coverprofile=coverage.out ./...
 
-      - run: go run ./lib/utils/check-cov
+      - run: go run github.com/ysmood/got/cmd/check-cov@latest
 
       - uses: actions/upload-artifact@v2
         if: ${{ always() }}

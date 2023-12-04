@@ -12,7 +12,6 @@ This domain is deprecated.
 
 // SchemaDomain Description of the protocol domain.
 type SchemaDomain struct {
-
 	// Name Domain name.
 	Name string `json:"name"`
 
@@ -21,8 +20,7 @@ type SchemaDomain struct {
 }
 
 // SchemaGetDomains Returns supported domains.
-type SchemaGetDomains struct {
-}
+type SchemaGetDomains struct{}
 
 // ProtoReq name
 func (m SchemaGetDomains) ProtoReq() string { return "Schema.getDomains" }
@@ -33,9 +31,8 @@ func (m SchemaGetDomains) Call(c Client) (*SchemaGetDomainsResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// SchemaGetDomainsResult Returns supported domains.
+// SchemaGetDomainsResult ...
 type SchemaGetDomainsResult struct {
-
 	// Domains List of supported domains.
 	Domains []*SchemaDomain `json:"domains"`
 }

@@ -36,7 +36,6 @@ const (
 
 // CacheStorageDataEntry Data entry.
 type CacheStorageDataEntry struct {
-
 	// RequestURL Request URL.
 	RequestURL string `json:"requestURL"`
 
@@ -64,12 +63,14 @@ type CacheStorageDataEntry struct {
 
 // CacheStorageCache Cache identifier.
 type CacheStorageCache struct {
-
 	// CacheID An opaque unique id of the cache.
 	CacheID CacheStorageCacheID `json:"cacheId"`
 
 	// SecurityOrigin Security origin of the cache.
 	SecurityOrigin string `json:"securityOrigin"`
+
+	// StorageKey Storage key of the cache.
+	StorageKey string `json:"storageKey"`
 
 	// CacheName The name of the cache.
 	CacheName string `json:"cacheName"`
@@ -77,7 +78,6 @@ type CacheStorageCache struct {
 
 // CacheStorageHeader ...
 type CacheStorageHeader struct {
-
 	// Name ...
 	Name string `json:"name"`
 
@@ -87,14 +87,12 @@ type CacheStorageHeader struct {
 
 // CacheStorageCachedResponse Cached response
 type CacheStorageCachedResponse struct {
-
 	// Body Entry content, base64-encoded.
 	Body []byte `json:"body"`
 }
 
 // CacheStorageDeleteCache Deletes a cache.
 type CacheStorageDeleteCache struct {
-
 	// CacheID Id of cache for deletion.
 	CacheID CacheStorageCacheID `json:"cacheId"`
 }
@@ -109,7 +107,6 @@ func (m CacheStorageDeleteCache) Call(c Client) error {
 
 // CacheStorageDeleteEntry Deletes a cache entry.
 type CacheStorageDeleteEntry struct {
-
 	// CacheID Id of cache where the entry will be deleted.
 	CacheID CacheStorageCacheID `json:"cacheId"`
 
@@ -127,9 +124,12 @@ func (m CacheStorageDeleteEntry) Call(c Client) error {
 
 // CacheStorageRequestCacheNames Requests cache names.
 type CacheStorageRequestCacheNames struct {
+	// SecurityOrigin (optional) At least and at most one of securityOrigin, storageKey must be specified.
+	// Security origin.
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
 
-	// SecurityOrigin Security origin.
-	SecurityOrigin string `json:"securityOrigin"`
+	// StorageKey (optional) Storage key.
+	StorageKey string `json:"storageKey,omitempty"`
 }
 
 // ProtoReq name
@@ -141,16 +141,14 @@ func (m CacheStorageRequestCacheNames) Call(c Client) (*CacheStorageRequestCache
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// CacheStorageRequestCacheNamesResult Requests cache names.
+// CacheStorageRequestCacheNamesResult ...
 type CacheStorageRequestCacheNamesResult struct {
-
 	// Caches Caches for the security origin.
 	Caches []*CacheStorageCache `json:"caches"`
 }
 
 // CacheStorageRequestCachedResponse Fetches cache entry.
 type CacheStorageRequestCachedResponse struct {
-
 	// CacheID Id of cache that contains the entry.
 	CacheID CacheStorageCacheID `json:"cacheId"`
 
@@ -172,24 +170,22 @@ func (m CacheStorageRequestCachedResponse) Call(c Client) (*CacheStorageRequestC
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// CacheStorageRequestCachedResponseResult Fetches cache entry.
+// CacheStorageRequestCachedResponseResult ...
 type CacheStorageRequestCachedResponseResult struct {
-
 	// Response Response read from the cache.
 	Response *CacheStorageCachedResponse `json:"response"`
 }
 
 // CacheStorageRequestEntries Requests data from cache.
 type CacheStorageRequestEntries struct {
-
 	// CacheID ID of cache to get entries from.
 	CacheID CacheStorageCacheID `json:"cacheId"`
 
 	// SkipCount (optional) Number of records to skip.
-	SkipCount int `json:"skipCount,omitempty"`
+	SkipCount *int `json:"skipCount,omitempty"`
 
 	// PageSize (optional) Number of records to fetch.
-	PageSize int `json:"pageSize,omitempty"`
+	PageSize *int `json:"pageSize,omitempty"`
 
 	// PathFilter (optional) If present, only return the entries containing this substring in the path
 	PathFilter string `json:"pathFilter,omitempty"`
@@ -204,9 +200,8 @@ func (m CacheStorageRequestEntries) Call(c Client) (*CacheStorageRequestEntriesR
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// CacheStorageRequestEntriesResult Requests data from cache.
+// CacheStorageRequestEntriesResult ...
 type CacheStorageRequestEntriesResult struct {
-
 	// CacheDataEntries Array of object store data entries.
 	CacheDataEntries []*CacheStorageDataEntry `json:"cacheDataEntries"`
 

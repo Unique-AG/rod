@@ -3,7 +3,6 @@ package rod
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/Unique-AG/rod/lib/proto"
 	"github.com/Unique-AG/rod/lib/utils"
@@ -12,15 +11,22 @@ import (
 // ErrTry error
 type ErrTry struct {
 	Value interface{}
+	Stack string
 }
 
 func (e *ErrTry) Error() string {
-	return fmt.Sprintf("error value: %#v", e.Value)
+	return fmt.Sprintf("error value: %#v\n%s", e.Value, e.Stack)
 }
 
 // Is interface
-func (e *ErrTry) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
+func (e *ErrTry) Is(err error) bool { _, ok := err.(*ErrTry); return ok }
+
+// Unwrap stdlib interface
+func (e *ErrTry) Unwrap() error {
+	if err, ok := e.Value.(error); ok {
+		return err
+	}
+	return fmt.Errorf("%v", e.Value)
 }
 
 // ErrExpectElement error
@@ -33,9 +39,7 @@ func (e *ErrExpectElement) Error() string {
 }
 
 // Is interface
-func (e *ErrExpectElement) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrExpectElement) Is(err error) bool { _, ok := err.(*ErrExpectElement); return ok }
 
 // ErrExpectElements error
 type ErrExpectElements struct {
@@ -47,13 +51,10 @@ func (e *ErrExpectElements) Error() string {
 }
 
 // Is interface
-func (e *ErrExpectElements) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrExpectElements) Is(err error) bool { _, ok := err.(*ErrExpectElements); return ok }
 
 // ErrElementNotFound error
-type ErrElementNotFound struct {
-}
+type ErrElementNotFound struct{}
 
 func (e *ErrElementNotFound) Error() string {
 	return "cannot find element"
@@ -76,9 +77,7 @@ func (e *ErrObjectNotFound) Error() string {
 }
 
 // Is interface
-func (e *ErrObjectNotFound) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrObjectNotFound) Is(err error) bool { _, ok := err.(*ErrObjectNotFound); return ok }
 
 // ErrEval error
 type ErrEval struct {
@@ -91,9 +90,7 @@ func (e *ErrEval) Error() string {
 }
 
 // Is interface
-func (e *ErrEval) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrEval) Is(err error) bool { _, ok := err.(*ErrEval); return ok }
 
 // ErrNavigation error
 type ErrNavigation struct {
@@ -105,13 +102,10 @@ func (e *ErrNavigation) Error() string {
 }
 
 // Is interface
-func (e *ErrNavigation) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrNavigation) Is(err error) bool { _, ok := err.(*ErrNavigation); return ok }
 
 // ErrPageCloseCanceled error
-type ErrPageCloseCanceled struct {
-}
+type ErrPageCloseCanceled struct{}
 
 func (e *ErrPageCloseCanceled) Error() string {
 	return "page close canceled"
@@ -135,9 +129,7 @@ func (e *ErrInvisibleShape) Error() string {
 }
 
 // Is interface
-func (e *ErrInvisibleShape) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrInvisibleShape) Is(err error) bool { _, ok := err.(*ErrInvisibleShape); return ok }
 
 // Unwrap ...
 func (e *ErrInvisibleShape) Unwrap() error {
@@ -160,9 +152,7 @@ func (e *ErrCovered) Unwrap() error {
 }
 
 // Is interface
-func (e *ErrCovered) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrCovered) Is(err error) bool { _, ok := err.(*ErrCovered); return ok }
 
 // ErrNoPointerEvents error.
 type ErrNoPointerEvents struct {
@@ -180,14 +170,24 @@ func (e *ErrNoPointerEvents) Unwrap() error {
 }
 
 // Is interface
-func (e *ErrNoPointerEvents) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrNoPointerEvents) Is(err error) bool { _, ok := err.(*ErrNoPointerEvents); return ok }
 
 // ErrPageNotFound error
-type ErrPageNotFound struct {
-}
+type ErrPageNotFound struct{}
 
 func (e *ErrPageNotFound) Error() string {
 	return "cannot find page"
 }
+
+// ErrNoShadowRoot error
+type ErrNoShadowRoot struct {
+	*Element
+}
+
+// Error ...
+func (e *ErrNoShadowRoot) Error() string {
+	return fmt.Sprintf("element has no shadow root: %s", e.String())
+}
+
+// Is interface
+func (e *ErrNoShadowRoot) Is(err error) bool { _, ok := err.(*ErrNoShadowRoot); return ok }

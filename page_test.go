@@ -3,36 +3,46 @@ package rod_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image/png"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/cdp"
 	"github.com/Unique-AG/rod/lib/defaults"
 	"github.com/Unique-AG/rod/lib/devices"
-	"github.com/Unique-AG/rod/lib/input"
 	"github.com/Unique-AG/rod/lib/proto"
 	"github.com/Unique-AG/rod/lib/utils"
-	"github.com/ysmood/got"
+	"github.com/ysmood/gson"
 )
 
-func (t T) GetPageBrowser() {
-	t.Equal(t.page.Browser(), t.browser)
+func TestGetPageBrowser(t *testing.T) {
+	g := setup(t)
+
+	g.Eq(g.page.Browser().BrowserContextID, g.browser.BrowserContextID)
 }
 
-func (t T) GetPageURL() {
-	t.page.MustNavigate(t.srcFile("fixtures/click-iframe.html")).MustWaitLoad()
-	t.Regex(`/fixtures/click-iframe.html\z`, t.page.MustInfo().URL)
+func TestGetPageURL(t *testing.T) {
+	g := setup(t)
+
+	g.page.MustNavigate(g.srcFile("fixtures/click-iframe.html")).MustWaitLoad()
+	g.Regex(`/fixtures/click-iframe.html\z`, g.page.MustInfo().URL)
 }
 
-func (t T) SetCookies() {
-	s := t.Serve()
+func TestSetCookies(t *testing.T) {
+	g := setup(t)
 
-	page := t.page.MustSetCookies([]*proto.NetworkCookieParam{{
+	s := g.Serve()
+
+	page := g.page.MustSetCookies([]*proto.NetworkCookieParam{{
 		Name:  "cookie-a",
 		Value: "1",
 		URL:   s.URL(),
@@ -40,7 +50,7 @@ func (t T) SetCookies() {
 		Name:  "cookie-b",
 		Value: "2",
 		URL:   s.URL(),
-	}}...).MustNavigate(s.URL())
+	}}...).MustNavigate(s.URL()).MustWaitLoad()
 
 	cookies := page.MustCookies()
 
@@ -48,26 +58,44 @@ func (t T) SetCookies() {
 		return cookies[i].Value < cookies[j].Value
 	})
 
-	t.Eq("1", cookies[0].Value)
-	t.Eq("2", cookies[1].Value)
+	g.Eq("1", cookies[0].Value)
+	g.Eq("2", cookies[1].Value)
 
 	page.MustSetCookies()
 
 	cookies = page.MustCookies()
-	t.Len(cookies, 0)
+	g.Len(cookies, 0)
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.TargetGetTargetInfo{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.TargetGetTargetInfo{})
 		page.MustCookies()
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.NetworkGetCookies{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.NetworkGetCookies{})
 		page.MustCookies()
 	})
 }
 
-func (t T) SetExtraHeaders() {
-	s := t.Serve()
+func TestSetBlockedURLs(t *testing.T) {
+	g := setup(t)
+	page := g.newPage()
+	urlsPattern := []string{}
+	page.EnableDomain(proto.NetworkEnable{})
+	page.MustSetBlockedURLs(urlsPattern...)
+	urlsPattern = append(urlsPattern, "*.js")
+	page.MustSetBlockedURLs(urlsPattern...)
+	go page.EachEvent(
+		func(e *proto.NetworkLoadingFailed) {
+			g.Eq(e.BlockedReason, proto.NetworkBlockedReasonInspector)
+		},
+	)
+	page.MustNavigate("https://github.com")
+}
+
+func TestSetExtraHeaders(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 
 	wg := sync.WaitGroup{}
 	var header http.Header
@@ -76,15 +104,15 @@ func (t T) SetExtraHeaders() {
 		wg.Done()
 	})
 
-	p := t.newPage()
+	p := g.newPage()
 	cleanup := p.MustSetExtraHeaders("a", "1", "b", "2")
 
 	wg.Add(1)
 	p.MustNavigate(s.URL())
 	wg.Wait()
 
-	t.Eq(header.Get("a"), "1")
-	t.Eq(header.Get("b"), "2")
+	g.Eq(header.Get("a"), "1")
+	g.Eq(header.Get("b"), "2")
 
 	cleanup()
 
@@ -94,13 +122,15 @@ func (t T) SetExtraHeaders() {
 		p.MustReload()
 		wg.Wait()
 
-		t.Eq(header.Get("a"), "")
-		t.Eq(header.Get("b"), "")
+		g.Eq(header.Get("a"), "")
+		g.Eq(header.Get("b"), "")
 	}
 }
 
-func (t T) SetUserAgent() {
-	s := t.Serve()
+func TestSetUserAgent(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 
 	ua := ""
 	lang := ""
@@ -114,28 +144,35 @@ func (t T) SetUserAgent() {
 		wg.Done()
 	})
 
-	t.newPage().MustSetUserAgent(nil).MustNavigate(s.URL())
+	g.newPage().MustSetUserAgent(nil).MustNavigate(s.URL())
 	wg.Wait()
 
-	t.Eq(ua, "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-	t.Eq(lang, "en")
+	g.Eq(ua, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+	g.Eq(lang, "en")
 }
 
-func (t T) PageHTML() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/click.html")).MustWaitLoad()
-	t.Has(p.MustHTML(), "<head>")
+func TestPageHTML(t *testing.T) {
+	g := setup(t)
 
-	t.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
-	t.Err(p.HTML())
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html")).MustWaitLoad()
+	p.MustElement("button").MustClick()
+	g.Has(p.MustHTML(), `a="ok"`)
+
+	g.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
+	g.Err(p.HTML())
 }
 
-func (t T) MustWaitElementsMoreThan() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/wait_elements.html")).MustWaitElementsMoreThan("li", 5)
-	t.Gt(len(p.MustElements("li")), 5)
+func TestMustWaitElementsMoreThan(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/wait_elements.html")).MustWaitElementsMoreThan("li", 5)
+	g.Gt(len(p.MustElements("li")), 5)
 }
 
-func (t T) PageCloseCancel() {
-	page := t.browser.MustPage(t.srcFile("fixtures/prevent-close.html"))
+func TestPageCloseCancel(t *testing.T) {
+	g := setup(t)
+
+	page := g.browser.MustPage(g.srcFile("fixtures/prevent-close.html"))
 	page.MustElement("body").MustClick() // only focused page will handle beforeunload event
 
 	w, h := page.MustHandleDialog()
@@ -143,39 +180,50 @@ func (t T) PageCloseCancel() {
 		w()
 		h(false, "")
 	}()
-	t.Eq(page.Close().Error(), "page close canceled")
+	g.Eq(page.Close().Error(), "page close canceled")
 
-	page.MustEval(`window.onbeforeunload = null`)
+	page.MustEval(`() => window.onbeforeunload = null`)
 	page.MustClose()
 }
 
-func (t T) LoadState() {
-	t.True(t.page.LoadState(&proto.PageEnable{}))
+func TestLoadState(t *testing.T) {
+	g := setup(t)
+
+	g.True(g.page.LoadState(&proto.PageEnable{}))
 }
 
-func (t T) DisableDomain() {
-	defer t.page.DisableDomain(&proto.PageEnable{})()
+func TestDisableDomain(t *testing.T) {
+	g := setup(t)
+
+	defer g.page.DisableDomain(&proto.PageEnable{})()
 }
 
-func (t T) PageContext() {
-	t.page.Timeout(time.Hour).CancelTimeout().MustEval(`1`)
+func TestPageContext(t *testing.T) {
+	g := setup(t)
+
+	g.page.Timeout(time.Hour).CancelTimeout().MustEval(`() => 1`)
+	_, _ = g.page.Timeout(time.Second).Timeout(time.Hour).CancelTimeout().Element("not-exist")
 }
 
-func (t T) PageActivate() {
-	t.page.MustActivate()
+func TestPageActivate(t *testing.T) {
+	g := setup(t)
+
+	g.page.MustActivate()
 }
 
-func (t T) Window() {
-	page := t.newPage(t.blank())
+func TestWindow(t *testing.T) {
+	g := setup(t)
 
-	t.E(page.SetViewport(nil))
+	page := g.newPage(g.blank())
+
+	g.E(page.SetViewport(nil))
 
 	bounds := page.MustGetWindow()
 	defer page.MustSetWindow(
-		bounds.Left,
-		bounds.Top,
-		bounds.Width,
-		bounds.Height,
+		*bounds.Left,
+		*bounds.Top,
+		*bounds.Width,
+		*bounds.Height,
 	)
 
 	page.MustWindowMaximize()
@@ -184,95 +232,182 @@ func (t T) Window() {
 	page.MustWindowNormal()
 	page.MustWindowMinimize()
 	page.MustWindowNormal()
-	page.MustSetWindow(0, 0, 1211, 611)
-	t.Eq(1211, page.MustEval(`window.innerWidth`).Int())
-	t.Eq(611, page.MustEval(`window.innerHeight`).Int())
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.BrowserGetWindowForTarget{})
+	page.MustSetWindow(0, 0, 1211, 611)
+	w, err := proto.BrowserGetWindowForTarget{}.Call(page)
+	g.E(err)
+	g.Eq(w.Bounds.Width, 1211)
+	g.Eq(w.Bounds.Height, 611)
+
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.BrowserGetWindowForTarget{})
 		page.MustGetWindow()
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.BrowserGetWindowBounds{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.BrowserGetWindowBounds{})
 		page.MustGetWindow()
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.BrowserGetWindowForTarget{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.BrowserGetWindowForTarget{})
 		page.MustSetWindow(0, 0, 1000, 1000)
 	})
 }
 
-func (t T) SetViewport() {
-	page := t.newPage(t.blank())
-	page.MustSetViewport(317, 419, 0, false)
-	res := page.MustEval(`[window.innerWidth, window.innerHeight]`)
-	t.Eq(317, res.Get("0").Int())
-	t.Eq(419, res.Get("1").Int())
+func TestSetViewport(t *testing.T) {
+	g := setup(t)
 
-	page2 := t.newPage(t.blank())
-	res = page2.MustEval(`[window.innerWidth, window.innerHeight]`)
-	t.Neq(int(317), res.Get("0").Int())
+	page := g.newPage(g.blank())
+	page.MustSetViewport(317, 419, 0, false)
+	res := page.MustEval(`() => [window.innerWidth, window.innerHeight]`)
+	g.Eq(317, res.Get("0").Int())
+	g.Eq(419, res.Get("1").Int())
+
+	page2 := g.newPage(g.blank())
+	res = page2.MustEval(`() => [window.innerWidth, window.innerHeight]`)
+	g.Neq(int(317), res.Get("0").Int())
 }
 
-func (t T) EmulateDevice() {
-	page := t.newPage(t.blank())
-	page.MustEmulate(devices.IPhone6or7or8Plus)
-	res := page.MustEval(`[window.innerWidth, window.innerHeight, navigator.userAgent]`)
-	t.Eq(980, res.Get("0").Int())
-	t.Eq(1743, res.Get("1").Int())
-	t.Eq(
+func TestSetDocumentContent(t *testing.T) {
+	g := setup(t)
+
+	page := g.newPage(g.blank())
+
+	doctype := "<!DOCTYPE html>"
+	html4StrictDoctype := `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`
+	html4LooseDoctype := `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`
+	xhtml11Doctype := `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">`
+
+	exampleWithHTML4StrictDoctype := html4StrictDoctype + "<html><head></head><body><div>test</div></body></html>"
+	page.MustSetDocumentContent(exampleWithHTML4StrictDoctype)
+	exp1 := page.MustEval(`() => new XMLSerializer().serializeToString(document)`).Str()
+	g.Eq(exp1, `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><div>test</div></body></html>`)
+	g.Eq(page.MustElement("html").MustHTML(), "<html><head></head><body><div>test</div></body></html>")
+	g.Eq(page.MustElement("head").MustText(), "")
+
+	exampleWithHTML4LooseDoctype := html4LooseDoctype + "<html><head></head><body><div>test</div></body></html>"
+	page.MustSetDocumentContent(exampleWithHTML4LooseDoctype)
+	exp2 := page.MustEval(`() => new XMLSerializer().serializeToString(document)`).Str()
+	g.Eq(exp2, `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><div>test</div></body></html>`)
+	g.Eq(page.MustElement("html").MustHTML(), "<html><head></head><body><div>test</div></body></html>")
+	g.Eq(page.MustElement("head").MustText(), "")
+
+	exampleWithXHTMLDoctype := xhtml11Doctype + "<html><head></head><body><div>test</div></body></html>"
+	page.MustSetDocumentContent(exampleWithXHTMLDoctype)
+	exp3 := page.MustEval(`() => new XMLSerializer().serializeToString(document)`).Str()
+	g.Eq(exp3, `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><div>test</div></body></html>`)
+	g.Eq(page.MustElement("html").MustHTML(), "<html><head></head><body><div>test</div></body></html>")
+	g.Eq(page.MustElement("head").MustText(), "")
+
+	exampleWithHTML5Doctype := doctype + "<html><head></head><body><div>test</div></body></html>"
+	page.MustSetDocumentContent(exampleWithHTML5Doctype)
+	exp4 := page.MustEval(`() => new XMLSerializer().serializeToString(document)`).Str()
+	g.Eq(exp4, `<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head></head><body><div>test</div></body></html>`)
+	g.Eq(page.MustElement("html").MustHTML(), "<html><head></head><body><div>test</div></body></html>")
+	g.Eq(page.MustElement("head").MustText(), "")
+
+	exampleWithoutDoctype := "<html><head></head><body><div>test</div></body></html>"
+	page.MustSetDocumentContent(exampleWithoutDoctype)
+	g.Eq(page.MustElement("html").MustHTML(), "<html><head></head><body><div>test</div></body></html>")
+
+	exampleBasic := doctype + "<div>test</div>"
+	page.MustSetDocumentContent(exampleBasic)
+	g.Eq(page.MustElement("div").MustText(), "test")
+
+	exampleWithTrickyContent := "<div>test</div>\x7F"
+	page.MustSetDocumentContent(exampleWithTrickyContent)
+	g.Eq(page.MustElement("div").MustText(), "test")
+
+	exampleWithEmoji := "<div>💪</div>"
+	page.MustSetDocumentContent(exampleWithEmoji)
+	g.Eq(page.MustElement("div").MustText(), "💪")
+}
+
+func TestEmulateDevice(t *testing.T) {
+	g := setup(t)
+
+	page := g.newPage(g.blank())
+	page.MustEmulate(devices.IPhone6or7or8)
+	res := page.MustEval(`() => [window.innerWidth, window.innerHeight, navigator.userAgent]`)
+
+	// TODO: this seems like a bug of chromium
+	{
+		g.Lt(math.Abs(float64(980-res.Get("0").Int())), 10)
+		g.Lt(math.Abs(float64(1743-res.Get("1").Int())), 10)
+	}
+
+	g.Eq(
 		"Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
 		res.Get("2").String(),
 	)
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
 		page.MustEmulate(devices.IPad)
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.EmulationSetTouchEmulationEnabled{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.EmulationSetTouchEmulationEnabled{})
 		page.MustEmulate(devices.IPad)
 	})
 }
 
-func (t T) PageCloseErr() {
-	page := t.newPage(t.blank())
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PageClose{})
+func TestPageCloseErr(t *testing.T) {
+	g := setup(t)
+
+	page := g.newPage(g.blank())
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.PageClose{})
 		page.MustClose()
 	})
 }
 
-func (t T) PageAddScriptTag() {
-	p := t.page.MustNavigate(t.blank()).MustWaitLoad()
+func TestPageCloseWhenNotAttached(t *testing.T) {
+	g := setup(t)
 
-	res := p.MustAddScriptTag(t.srcFile("fixtures/add-script-tag.js")).MustEval(`count()`)
-	t.Eq(0, res.Int())
+	p := g.browser.MustPage(g.blank())
 
-	res = p.MustAddScriptTag(t.srcFile("fixtures/add-script-tag.js")).MustEval(`count()`)
-	t.Eq(1, res.Int())
+	g.mc.stub(1, proto.PageClose{}, func(send StubSend) (gson.JSON, error) {
+		return gson.New(nil), cdp.ErrNotAttachedToActivePage
+	})
 
-	t.E(p.AddScriptTag("", `let ok = 'yes'`))
-	res = p.MustEval(`ok`)
-	t.Eq("yes", res.String())
+	g.E(p.Close())
 }
 
-func (t T) PageAddStyleTag() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/click.html")).MustWaitLoad()
+func TestPageAddScriptTag(t *testing.T) {
+	g := setup(t)
 
-	res := p.MustAddStyleTag(t.srcFile("fixtures/add-style-tag.css")).
-		MustElement("h4").MustEval(`getComputedStyle(this).color`)
-	t.Eq("rgb(255, 0, 0)", res.String())
+	p := g.page.MustNavigate(g.blank()).MustWaitLoad()
 
-	p.MustAddStyleTag(t.srcFile("fixtures/add-style-tag.css"))
-	t.Len(p.MustElements("link"), 1)
+	res := p.MustAddScriptTag(g.srcFile("fixtures/add-script-tag.js")).MustEval(`() => count()`)
+	g.Eq(0, res.Int())
 
-	t.E(p.AddStyleTag("", "h4 { color: green; }"))
-	res = p.MustElement("h4").MustEval(`getComputedStyle(this).color`)
-	t.Eq("rgb(0, 128, 0)", res.String())
+	res = p.MustAddScriptTag(g.srcFile("fixtures/add-script-tag.js")).MustEval(`() => count()`)
+	g.Eq(1, res.Int())
+
+	g.E(p.AddScriptTag("", `let ok = 'yes'`))
+	res = p.MustEval(`() => ok`)
+	g.Eq("yes", res.String())
 }
 
-func (t T) PageWaitOpen() {
-	page := t.page.MustNavigate(t.srcFile("fixtures/open-page.html"))
+func TestPageAddStyleTag(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html")).MustWaitLoad()
+
+	res := p.MustAddStyleTag(g.srcFile("fixtures/add-style-tag.css")).
+		MustElement("h4").MustEval(`() => getComputedStyle(this).color`)
+	g.Eq("rgb(255, 0, 0)", res.String())
+
+	p.MustAddStyleTag(g.srcFile("fixtures/add-style-tag.css"))
+	g.Len(p.MustElements("link"), 1)
+
+	g.E(p.AddStyleTag("", "h4 { color: green; }"))
+	res = p.MustElement("h4").MustEval(`() => getComputedStyle(this).color`)
+	g.Eq("rgb(0, 128, 0)", res.String())
+}
+
+func TestPageWaitOpen(t *testing.T) {
+	g := setup(t)
+
+	page := g.page.MustNavigate(g.srcFile("fixtures/open-page.html"))
 
 	wait := page.MustWaitOpen()
 
@@ -281,39 +416,47 @@ func (t T) PageWaitOpen() {
 	newPage := wait()
 	defer newPage.MustClose()
 
-	t.Eq("new page", newPage.MustEval("window.a").String())
+	g.Eq("new page", newPage.MustEval("() => window.a").String())
 }
 
-func (t T) PageWait() {
-	page := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
-	page.MustWait(`document.querySelector('button') !== null`)
+func TestPageWait(t *testing.T) {
+	g := setup(t)
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
+	page := g.page.MustNavigate(g.srcFile("fixtures/click.html"))
+	page.MustWait(`() => document.querySelector('button') !== null`)
+
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
 		page.MustWait(``)
 	})
 }
 
-func (t T) PageNavigateBlank() {
-	t.page.MustNavigate("")
+func TestPageNavigateBlank(t *testing.T) {
+	g := setup(t)
+
+	g.page.MustNavigate("")
 }
 
-func (t T) PageWaitNavigation() {
-	s := t.Serve().Route("/", "")
-	wait := t.page.MustWaitNavigation()
-	t.page.MustNavigate(s.URL())
+func TestPageWaitNavigation(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve().Route("/", "")
+	wait := g.page.MustWaitNavigation()
+	g.page.MustNavigate(s.URL())
 	wait()
 }
 
-func (t T) PageWaitRequestIdle() {
-	s := t.Serve()
+func TestPageWaitRequestIdle(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
 
 	sleep := time.Second
 
 	s.Route("/r1", "")
 	s.Mux.HandleFunc("/r2", func(w http.ResponseWriter, r *http.Request) {
-		t.E(w.Write([]byte("part")))
-		ctx, cancel := context.WithTimeout(t.Context(), sleep)
+		g.E(w.Write([]byte("part")))
+		ctx, cancel := context.WithTimeout(g.Context(), sleep)
 		defer cancel()
 		<-ctx.Done()
 	})
@@ -322,18 +465,20 @@ func (t T) PageWaitRequestIdle() {
 		rw.WriteHeader(http.StatusFound)
 	})
 	s.Route("/r4", "")
-	s.Route("/", ".html", `<html></html>`)
+	s.Route("/img.jpg", ".jpg", "img")
+	s.Route("/", ".html", `<html><body></body></html>`)
 
-	page := t.newPage(s.URL()).MustWaitLoad()
+	page := g.newPage(s.URL()).MustWaitLoad()
 
 	code := ` () => {
 		fetch('/r2').then(r => r.text())
 		fetch('/r1')
 		fetch('/r3')
+		document.body.innerHTML = '<img src="/img.jpg" />'
 	}`
 
 	waitReq := ""
-	t.browser.Logger(utils.Log(func(msg ...interface{}) {
+	g.browser.Logger(utils.Log(func(msg ...interface{}) {
 		typ := msg[0].(rod.TraceType)
 		if typ == rod.TraceTypeWaitRequests {
 			list := msg[2].(map[string]string)
@@ -343,351 +488,329 @@ func (t T) PageWaitRequestIdle() {
 			}
 		}
 	}))
-	defer t.browser.Logger(rod.DefaultLogger)
+	defer g.browser.Logger(rod.DefaultLogger)
 
-	t.browser.Trace(true)
+	g.browser.Trace(true)
 	wait := page.MustWaitRequestIdle("/r1")
-	t.browser.Trace(defaults.Trace)
+	g.browser.Trace(defaults.Trace)
 	page.MustEval(code)
 	start := time.Now()
 	wait()
-	t.Gt(time.Since(start), sleep)
-	t.Regex("/r2$", waitReq)
+	g.Gt(time.Since(start), sleep)
+	g.Regex("/r2$", waitReq)
 
 	wait = page.MustWaitRequestIdle("/r2")
 	page.MustEval(code)
 	start = time.Now()
 	wait()
-	t.Lt(time.Since(start), sleep)
+	g.Lt(time.Since(start), sleep)
 
-	t.Panic(func() {
+	g.Panic(func() {
 		wait()
 	})
 }
 
-func (t T) PageWaitIdle() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
+func TestPageCaptureDOMSnapshot(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html"))
+	domSnapshot := p.MustCaptureDOMSnapshot()
+	g.Is(domSnapshot.Strings, []string{})
+
+	timeOutPage := p.Timeout(1 * time.Second)
+	utils.Sleep(1)
+	snapshot, err := timeOutPage.CaptureDOMSnapshot()
+	g.Is(err, context.DeadlineExceeded)
+	g.Nil(snapshot)
+}
+
+func TestPageWaitDOMStable(t *testing.T) {
+	g := setup(t)
+
+	{
+		p := g.page.MustNavigate(g.srcFile("fixtures/page-wait-stable.html"))
+		p.MustWaitDOMStable()
+	}
+
+	{
+		p := g.page.MustNavigate(g.srcFile("fixtures/page-wait-stable.html"))
+		err := p.Timeout(time.Second).WaitDOMStable(time.Second, 0)
+		g.Is(err, context.DeadlineExceeded)
+	}
+
+	{
+		g.Panic(func() {
+			p := g.page.MustNavigate(g.srcFile("fixtures/page-wait-stable.html"))
+			g.mc.stubErr(1, proto.DOMSnapshotCaptureSnapshot{})
+			p.MustWaitDOMStable()
+		})
+	}
+
+	{
+		g.Panic(func() {
+			p := g.page.MustNavigate(g.srcFile("fixtures/page-wait-stable.html"))
+			g.mc.stubErr(2, proto.DOMSnapshotCaptureSnapshot{})
+			p.MustWaitDOMStable()
+		})
+	}
+}
+
+func TestPageWaitStable(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/page-wait-stable.html"))
+	p.MustWaitStable()
+}
+
+func TestPageWaitIdle(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html"))
 	p.MustElement("button").MustClick()
 	p.MustWaitIdle()
 
-	t.True(p.MustHas("[a=ok]"))
+	g.True(p.MustHas("[a=ok]"))
 }
 
-func (t T) PageEventSession() {
-	s := t.Serve()
-	p := t.newPage(s.URL())
+func TestPageEventSession(t *testing.T) {
+	g := setup(t)
+
+	s := g.Serve()
+	p := g.newPage(s.URL())
 
 	p.EnableDomain(proto.NetworkEnable{})
-	go t.page.Context(t.Context()).EachEvent(func(e *proto.NetworkRequestWillBeSent) {
-		t.Log("should not goes to here")
-		t.Fail()
+	go g.page.Context(g.Context()).EachEvent(func(e *proto.NetworkRequestWillBeSent) {
+		g.Log("should not goes to here")
+		g.Fail()
 	})()
 	p.MustEval(`u => fetch(u)`, s.URL())
 }
 
-func (t T) PageWaitEvent() {
-	wait := t.page.WaitEvent(&proto.PageFrameNavigated{})
-	t.page.MustNavigate(t.blank())
+func TestPageWaitEvent(t *testing.T) {
+	g := setup(t)
+
+	wait := g.page.WaitEvent(&proto.PageFrameNavigated{})
+	g.page.MustNavigate(g.blank())
 	wait()
 }
 
-func (t T) PageWaitEventParseEventOnlyOnce() {
-	nav1 := t.page.WaitEvent(&proto.PageFrameNavigated{})
-	nav2 := t.page.WaitEvent(&proto.PageFrameNavigated{})
-	t.page.MustNavigate(t.blank())
+func TestPageWaitEventParseEventOnlyOnce(t *testing.T) {
+	g := setup(t)
+
+	nav1 := g.page.WaitEvent(&proto.PageFrameNavigated{})
+	nav2 := g.page.WaitEvent(&proto.PageFrameNavigated{})
+	g.page.MustNavigate(g.blank())
 	nav1()
 	nav2()
 }
 
-func (t T) PageEvent() {
-	p := t.browser.MustPage()
-	ctx := t.Context()
+func TestPageEvent(t *testing.T) {
+	g := setup(t)
+
+	p := g.browser.MustPage()
+	ctx := g.Context()
 	events := p.Context(ctx).Event()
-	p.MustNavigate(t.blank())
+	p.MustNavigate(g.blank())
 	for msg := range events {
 		if msg.Load(proto.PageFrameStartedLoading{}) {
 			break
 		}
 	}
-	utils.Sleep(0.1)
+	utils.Sleep(0.3)
 	ctx.Cancel()
 
 	go func() {
 		for range p.Event() {
+			utils.Noop()
 		}
 	}()
 	p.MustClose()
 }
 
-func (t T) PageStopEventAfterDetach() {
-	p := t.browser.MustPage().Context(t.Context())
+func TestPageStopEventAfterDetach(t *testing.T) {
+	g := setup(t)
+
+	p := g.browser.MustPage().Context(g.Context())
 	go func() {
 		utils.Sleep(0.3)
 		p.MustClose()
 	}()
 	for range p.Event() {
+		utils.Noop()
 	}
 }
 
-func (t T) Alert() {
-	page := t.page.MustNavigate(t.srcFile("fixtures/alert.html"))
+func TestAlert(t *testing.T) {
+	g := setup(t)
+
+	page := g.page.MustNavigate(g.srcFile("fixtures/alert.html"))
 
 	wait, handle := page.MustHandleDialog()
 
 	go page.MustElement("button").MustClick()
 
 	e := wait()
-	t.Eq(e.Message, "clicked")
+	g.Eq(e.Message, "clicked")
 	handle(true, "")
 }
 
-func (t T) Mouse() {
-	page := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
-	page.MustElement("button")
-	mouse := page.Mouse
+func TestPageHandleFileDialog(t *testing.T) {
+	g := setup(t)
 
-	mouse.MustScroll(0, 10)
-	mouse.MustMove(140, 160)
-	mouse.MustDown("left")
-	mouse.MustUp("left")
+	p := g.page.MustNavigate(g.srcFile("fixtures/input.html"))
+	el := p.MustElement(`[type=file]`)
 
-	t.True(page.MustHas("[a=ok]"))
+	setFiles := p.MustHandleFileDialog()
+	el.MustClick()
+	setFiles(slash("fixtures/click.html"), slash("fixtures/alert.html"))
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchMouseEvent{})
-		mouse.MustScroll(0, 10)
-	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchMouseEvent{})
-		mouse.MustDown(proto.InputMouseButtonLeft)
-	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchMouseEvent{})
-		mouse.MustUp(proto.InputMouseButtonLeft)
-	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchMouseEvent{})
-		mouse.MustClick(proto.InputMouseButtonLeft)
-	})
+	list := el.MustEval("() => Array.from(this.files).map(f => f.name)").Arr()
+	g.Len(list, 2)
+	g.Eq("alert.html", list[1].String())
+
+	{
+		g.mc.stubErr(1, proto.PageSetInterceptFileChooserDialog{})
+		g.Err(p.HandleFileDialog())
+	}
+	{
+		g.mc.stubErr(2, proto.PageSetInterceptFileChooserDialog{})
+		setFiles, _ := p.HandleFileDialog()
+		el.MustClick()
+		g.Err(setFiles([]string{slash("fixtures/click.html")}))
+		g.E(proto.PageSetInterceptFileChooserDialog{Enabled: false}.Call(p))
+	}
 }
 
-func (t T) MouseHoldMultiple() {
-	p := t.page.MustNavigate(t.blank())
+func TestPageScreenshot(t *testing.T) {
+	g := setup(t)
 
-	p.Mouse.MustDown("left")
-	defer p.Mouse.MustUp("left")
-	p.Mouse.MustDown("right")
-	defer p.Mouse.MustUp("right")
-}
-
-func (t T) MouseClick() {
-	t.browser.SlowMotion(1)
-	defer func() { t.browser.SlowMotion(0) }()
-
-	page := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
-	page.MustElement("button")
-	mouse := page.Mouse
-	mouse.MustMove(140, 160)
-	mouse.MustClick("left")
-	t.True(page.MustHas("[a=ok]"))
-}
-
-func (t T) MouseDrag() {
-	page := t.newPage().MustNavigate(t.srcFile("fixtures/drag.html")).MustWaitLoad()
-	mouse := page.Mouse
-
-	mouse.MustMove(3, 3)
-	mouse.MustDown("left")
-	t.E(mouse.Move(60, 80, 3))
-	mouse.MustUp("left")
-
-	utils.Sleep(0.3)
-	t.Eq(page.MustEval(`dragTrack`).Str(), " move 3 3 down 3 3 move 22 28 move 41 54 move 60 80 up 60 80")
-}
-
-func (t T) NativeDrag(got.Skip) { // devtools doesn't support to use mouse event to simulate it for now
-	page := t.page.MustNavigate(t.srcFile("fixtures/drag.html"))
-	mouse := page.Mouse
-
-	pt := page.MustElement("#draggable").MustShape().OnePointInside()
-	toY := page.MustElement(".dropzone:nth-child(2)").MustShape().OnePointInside().Y
-
-	page.Overlay(pt.X, pt.Y, 10, 10, "from")
-	page.Overlay(pt.X, toY, 10, 10, "to")
-
-	mouse.MustMove(pt.X, pt.Y)
-	mouse.MustDown("left")
-	t.E(mouse.Move(pt.X, toY, 5))
-	page.MustScreenshot("")
-	mouse.MustUp("left")
-
-	page.MustElement(".dropzone:nth-child(2) #draggable")
-}
-
-func (t T) Touch() {
-	page := t.newPage().MustEmulate(devices.IPad)
-
-	wait := page.WaitNavigation(proto.PageLifecycleEventNameLoad)
-	page.MustNavigate(t.srcFile("fixtures/touch.html"))
-	wait()
-
-	touch := page.Touch
-
-	touch.MustTap(10, 20)
-
-	p := &proto.InputTouchPoint{X: 30, Y: 40}
-
-	touch.MustStart(p).MustEnd()
-	touch.MustStart(p)
-	p.MoveTo(50, 60)
-	touch.MustMove(p).MustCancel()
-
-	page.MustWait(`touchTrack == ' start 10 20 end start 30 40 end start 30 40 move 50 60 cancel'`)
-
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchTouchEvent{})
-		touch.MustTap(1, 2)
-	})
-}
-
-func (t T) PageScreenshot() {
-	f := filepath.Join("tmp", "screenshots", t.Srand(16)+".png")
-	p := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
+	f := filepath.Join("tmp", "screenshots", g.RandStr(16)+".png")
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html"))
 	p.MustElement("button")
 	p.MustScreenshot()
 	data := p.MustScreenshot(f)
 	img, err := png.Decode(bytes.NewBuffer(data))
-	t.E(err)
-	t.Eq(1280, img.Bounds().Dx())
-	t.Eq(800, img.Bounds().Dy())
-	t.Nil(os.Stat(f))
+	g.E(err)
+	g.Eq(1280, img.Bounds().Dx())
+	g.Eq(800, img.Bounds().Dy())
+	g.Nil(os.Stat(f))
 
 	p.MustScreenshot("")
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PageCaptureScreenshot{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.PageCaptureScreenshot{})
 		p.MustScreenshot()
 	})
 }
 
-func (t T) ScreenshotFullPage() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/scroll.html"))
+func TestScreenshotFullPage(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/scroll.html"))
 	p.MustElement("button")
 	data := p.MustScreenshotFullPage()
 	img, err := png.Decode(bytes.NewBuffer(data))
-	t.E(err)
-	res := p.MustEval(`({w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight})`)
-	t.Eq(res.Get("w").Int(), img.Bounds().Dx())
-	t.Eq(res.Get("h").Int(), img.Bounds().Dy())
+	g.E(err)
+	res := p.MustEval(`() => ({w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight})`)
+	g.Eq(res.Get("w").Int(), img.Bounds().Dx())
+	g.Eq(res.Get("h").Int(), img.Bounds().Dy())
 
 	// after the full page screenshot the window size should be the same as before
-	res = p.MustEval(`({w: innerWidth, h: innerHeight})`)
-	t.Eq(1280, res.Get("w").Int())
-	t.Eq(800, res.Get("h").Int())
+	res = p.MustEval(`() => ({w: innerWidth, h: innerHeight})`)
+	g.Eq(1280, res.Get("w").Int())
+	g.Eq(800, res.Get("h").Int())
 
 	p.MustScreenshotFullPage()
 
-	noEmulation := t.newPage(t.blank())
-	t.E(noEmulation.SetViewport(nil))
+	noEmulation := g.newPage(g.blank())
+	g.E(noEmulation.SetViewport(nil))
 	noEmulation.MustScreenshotFullPage()
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PageGetLayoutMetrics{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.PageGetLayoutMetrics{})
 		p.MustScreenshotFullPage()
 	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.EmulationSetDeviceMetricsOverride{})
+		p.MustScreenshotFullPage()
+	})
+
+	g.Panic(func() {
+		g.mc.stub(1, proto.PageGetLayoutMetrics{}, func(send StubSend) (gson.JSON, error) {
+			return gson.New(proto.PageGetLayoutMetricsResult{}), nil
+		})
 		p.MustScreenshotFullPage()
 	})
 }
 
-func (t T) ScreenshotFullPageInit() {
-	p := t.newPage(t.srcFile("fixtures/scroll.html"))
+func TestScreenshotFullPageInit(t *testing.T) {
+	g := setup(t)
+
+	p := g.newPage(g.srcFile("fixtures/scroll.html"))
 
 	// should not panic
 	p.MustScreenshotFullPage()
 }
 
-func (t T) PageInput() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/input.html"))
+func TestPageConsoleLog(t *testing.T) {
+	g := setup(t)
 
-	el := p.MustElement("input")
-	el.MustFocus()
-	p.Keyboard.MustPress('A')
-	p.Keyboard.MustInsertText(" Test")
-	p.Keyboard.MustPress(input.Tab)
-
-	t.Eq("A Test", el.MustText())
-
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchKeyEvent{})
-		p.Keyboard.MustDown('a')
-	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.InputDispatchKeyEvent{})
-		p.Keyboard.MustUp('a')
-	})
-	t.Panic(func() {
-		t.mc.stubErr(3, proto.InputDispatchKeyEvent{})
-		p.Keyboard.MustPress('a')
-	})
-}
-
-func (t T) PageInputDate() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/input.html"))
-	p.MustElement("[type=date]").MustInput("12")
-}
-
-func (t T) PageScroll() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/scroll.html")).MustWaitLoad()
-
-	p.Mouse.MustMove(30, 30)
-	p.Mouse.MustClick(proto.InputMouseButtonLeft)
-
-	p.Mouse.MustScroll(0, 10)
-	p.Mouse.MustScroll(100, 190)
-	t.E(p.Mouse.Scroll(200, 300, 5))
-
-	p.MustWait(`pageXOffset > 200 && pageYOffset > 300`)
-}
-
-func (t T) PageConsoleLog() {
-	p := t.newPage(t.blank()).MustWaitLoad()
+	p := g.newPage(g.blank()).MustWaitLoad()
 	e := &proto.RuntimeConsoleAPICalled{}
 	wait := p.WaitEvent(e)
-	p.MustEval(`console.log(1, {b: ['test']})`)
+	p.MustEval(`() => console.log(1, {b: ['test']})`)
 	wait()
-	t.Eq("test", p.MustObjectToJSON(e.Args[1]).Get("b.0").String())
-	t.Eq(`1 map[b:[test]]`, p.MustObjectsToJSON(e.Args).Join(" "))
+	g.Eq("test", p.MustObjectToJSON(e.Args[1]).Get("b.0").String())
+	g.Eq(`1 map[b:[test]]`, p.MustObjectsToJSON(e.Args).Join(" "))
 }
 
-func (t T) Fonts() {
+func TestFonts(t *testing.T) {
+	g := setup(t)
+
 	if !utils.InContainer { // No need to test font rendering on regular OS
-		t.SkipNow()
+		g.SkipNow()
 	}
 
-	p := t.page.MustNavigate(t.srcFile("fixtures/fonts.html")).MustWaitLoad()
+	p := g.page.MustNavigate(g.srcFile("fixtures/fonts.html")).MustWaitLoad()
 
 	p.MustPDF("tmp", "fonts.pdf") // download the file from Github Actions Artifacts
 }
 
-func (t T) PagePDF() {
-	p := t.page.MustNavigate(t.srcFile("fixtures/click.html"))
+func TestPagePDF(t *testing.T) {
+	g := setup(t)
+
+	p := g.page.MustNavigate(g.srcFile("fixtures/click.html"))
+
+	s, err := p.PDF(&proto.PagePrintToPDF{})
+	g.E(err)
+	g.Nil(s.Close())
+
 	p.MustPDF("")
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PagePrintToPDF{})
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.PagePrintToPDF{})
 		p.MustPDF()
 	})
 }
 
-func (t T) PageNavigateErr() {
-	// dns error
-	err := t.page.Navigate("http://" + t.Srand(16))
-	t.Is(err, &rod.ErrNavigation{})
-	t.Is(err.Error(), "navigation failed: net::ERR_NAME_NOT_RESOLVED")
+func TestPageNavigateNetworkErr(t *testing.T) {
+	g := setup(t)
+	p := g.newPage()
 
-	s := t.Serve()
+	err := p.Navigate("http://127.0.0.1:1")
+	g.Is(err, &rod.ErrNavigation{})
+	g.Is(err.Error(), "navigation failed: net::ERR_NAME_NOT_RESOLVED")
+	p.MustNavigate("about:blank")
+}
+
+func TestPageNavigateErr(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("TODO: This test on Windows is flaky")
+	}
+
+	g := setup(t)
+
+	s := g.Serve()
 
 	s.Mux.HandleFunc("/404", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
@@ -697,54 +820,56 @@ func (t T) PageNavigateErr() {
 	})
 
 	// will not panic
-	t.page.MustNavigate(s.URL("/404"))
-	t.page.MustNavigate(s.URL("/500"))
+	g.page.MustNavigate(s.URL("/404"))
+	g.page.MustNavigate(s.URL("/500"))
 
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PageStopLoading{})
-		t.page.MustNavigate(t.blank())
-	})
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.PageNavigate{})
-		t.page.MustNavigate(t.blank())
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.PageNavigate{})
+		g.page.MustNavigate(g.blank())
 	})
 }
 
-func (t T) PageWaitLoadErr() {
-	t.Panic(func() {
-		t.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
-		t.page.MustWaitLoad()
+func TestPageWaitLoadErr(t *testing.T) {
+	g := setup(t)
+
+	g.Panic(func() {
+		g.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
+		g.page.MustWaitLoad()
 	})
 }
 
-func (t T) PageNavigation() {
-	p := t.newPage().MustReload()
+func TestPageNavigation(t *testing.T) {
+	g := setup(t)
+
+	p := g.newPage().MustReload()
 
 	wait := p.WaitNavigation(proto.PageLifecycleEventNameDOMContentLoaded)
-	p.MustNavigate(t.srcFile("fixtures/click.html"))
+	p.MustNavigate(g.srcFile("fixtures/click.html"))
 	wait()
 
 	wait = p.WaitNavigation(proto.PageLifecycleEventNameDOMContentLoaded)
-	p.MustNavigate(t.srcFile("fixtures/selector.html"))
+	p.MustNavigate(g.srcFile("fixtures/selector.html"))
 	wait()
 
 	wait = p.WaitNavigation(proto.PageLifecycleEventNameDOMContentLoaded)
 	p.MustNavigateBack()
 	wait()
-	t.Regex("fixtures/click.html$", p.MustInfo().URL)
+	g.Regex("fixtures/click.html$", p.MustInfo().URL)
 
 	wait = p.WaitNavigation(proto.PageLifecycleEventNameDOMContentLoaded)
 	p.MustNavigateForward()
 	wait()
-	t.Regex("fixtures/selector.html$", p.MustInfo().URL)
+	g.Regex("fixtures/selector.html$", p.MustInfo().URL)
 
-	t.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
-	t.Err(p.Reload())
+	g.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
+	g.Err(p.Reload())
 }
 
-func (t T) PagePool() {
+func TestPagePool(t *testing.T) {
+	g := setup(t)
+
 	pool := rod.NewPagePool(3)
-	create := func() *rod.Page { return t.browser.MustPage() }
+	create := func() *rod.Page { return g.browser.MustPage() }
 	p := pool.Get(create)
 	pool.Put(p)
 	pool.Cleanup(func(p *rod.Page) {
@@ -752,25 +877,96 @@ func (t T) PagePool() {
 	})
 }
 
-func (t T) PageUseNonExistSession() {
-	// TODO: chrome bug that hangs for closing non-exist session id
-	// Related chrome ticket: https://bugs.chromium.org/p/chromium/issues/detail?id=1151822
-	p := t.browser.PageFromSession("nonexist").Timeout(300 * time.Millisecond)
+func TestPageUseNonExistSession(t *testing.T) {
+	g := setup(t)
+
+	p := g.browser.PageFromSession("not-exist")
 	err := proto.PageClose{}.Call(p)
-	t.Is(err, context.DeadlineExceeded)
+	g.Eq(err, cdp.ErrSessionNotFound)
 }
 
-func (t T) PageElementFromObjectErr() {
-	p := t.newPage(t.srcFile("./fixtures/click.html"))
-	utils.Sleep(0.1)
+func TestPageElementFromObjectErr(t *testing.T) {
+	g := setup(t)
+
+	p := g.newPage()
+	wait := p.WaitNavigation(proto.PageLifecycleEventNameLoad)
+	p.MustNavigate(g.srcFile("./fixtures/click.html"))
+	wait()
 	res, err := proto.DOMGetNodeForLocation{X: 10, Y: 10}.Call(p)
-	t.E(err)
+	g.E(err)
 
 	obj, err := proto.DOMResolveNode{
 		BackendNodeID: res.BackendNodeID,
 	}.Call(p)
-	t.E(err)
+	g.E(err)
 
-	t.mc.stubErr(1, proto.RuntimeEvaluate{})
-	t.Err(p.ElementFromObject(obj.Object))
+	g.mc.stubErr(1, proto.RuntimeEvaluate{})
+	g.Err(p.ElementFromObject(obj.Object))
+}
+
+func TestPageTriggerFavicon(t *testing.T) {
+	g := setup(t)
+	s := g.Serve()
+	// test browser in no-headless mode with an error
+	{
+		page := g.newPage()
+		page.MustNavigate(s.URL())
+		g.mc.stub(1, proto.BrowserGetBrowserCommandLine{}, func(send StubSend) (gson.JSON, error) {
+			commandLine := proto.BrowserGetBrowserCommandLineResult{Arguments: []string{""}}
+			return gson.New(commandLine), nil
+		})
+		err := page.TriggerFavicon()
+		g.Eq(err.Error(), "browser is no-headless")
+	}
+
+	// test browser in headless mode to trigger favicon request
+	{
+		faviconURL := fmt.Sprintf(s.HostURL.String(), "/favicon.ico")
+		s.Route("/test", "")
+		s.Route("/favicon.ico", filepath.FromSlash("./fixtures/icon.png"))
+		page := g.newPage()
+		page.MustNavigate(s.URL("/test"))
+		page.MustWaitIdle()
+		go page.Context(g.Context()).EachEvent(
+			func(e *proto.NetworkRequestWillBeSent) {
+				if e.Request.URL == faviconURL {
+					g.Eq(e.Request.URL, faviconURL)
+				}
+			},
+		)()
+		page.MustTriggerFavicon()
+	}
+
+	// test browser in headless mode to trigger favicon request with an error
+	{
+		p := g.newPage().MustNavigate(s.URL())
+		g.mc.stubErr(1, proto.RuntimeCallFunctionOn{})
+		g.Panic(func() {
+			p.MustTriggerFavicon()
+		})
+	}
+}
+
+func TestPageActionAfterClose(t *testing.T) {
+	g := setup(t)
+
+	{
+		p := g.browser.MustPage(g.blank())
+
+		p.MustClose()
+
+		_, err := p.Element("not-exists")
+		g.Eq(err, context.Canceled)
+	}
+
+	{
+		p := g.browser.MustPage(g.blank())
+		go func() {
+			utils.Sleep(1)
+			p.MustClose()
+		}()
+
+		_, err := p.Eval(`() => new Promise(r => {})`)
+		g.Eq(err, context.Canceled)
+	}
 }

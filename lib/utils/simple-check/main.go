@@ -1,14 +1,18 @@
+// Package main ...
 package main
 
-import "github.com/Unique-AG/rod/lib/utils"
+import (
+	"github.com/Unique-AG/rod/lib/utils"
+)
 
 func main() {
-	utils.ExecLine("go install github.com/ysmood/golangci-lint@latest")
-	utils.ExecLine("golangci-lint")
+	utils.Exec("go run ./lib/utils/setup")
 
-	utils.ExecLine("go test -coverprofile=coverage.out ./lib/launcher")
-	utils.ExecLine("go run ./lib/utils/check-cov")
+	utils.Exec("go run ./lib/utils/lint")
 
-	utils.ExecLine("go test -coverprofile=coverage.out")
-	utils.ExecLine("go run ./lib/utils/check-cov")
+	utils.Exec("go test -coverprofile=coverage.out ./lib/launcher")
+	utils.Exec("go run ./lib/utils/check-cov")
+
+	utils.Exec("go test -coverprofile=coverage.out")
+	utils.Exec("go run ./lib/utils/check-cov")
 }

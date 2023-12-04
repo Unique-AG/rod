@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Unique-AG/rod"
+	"github.com/Unique-AG/rod/lib/cdp"
 	"github.com/Unique-AG/rod/lib/launcher"
 	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/got"
@@ -48,8 +49,8 @@ func BenchmarkManager(b *testing.B) {
 			}()
 
 			l := launcher.MustNewManaged("")
-			client := l.Client()
-			browser := rod.New().Context(ctx).Client(client).MustConnect()
+			u, h := l.ClientHeader()
+			browser := rod.New().Client(cdp.MustStartWithURL(ctx, u, h)).MustConnect()
 			page := browser.MustPage()
 			wait := page.MustWaitNavigation()
 			page.MustNavigate(s.URL())

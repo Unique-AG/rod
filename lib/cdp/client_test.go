@@ -2,44 +2,31 @@ package cdp_test
 
 import (
 	"context"
-	"flag"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
+	"io"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/Unique-AG/rod"
 	"github.com/Unique-AG/rod/lib/cdp"
+	"github.com/Unique-AG/rod/lib/defaults"
 	"github.com/Unique-AG/rod/lib/launcher"
 	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/got"
+	"github.com/ysmood/gotrace"
 	"github.com/ysmood/gson"
 )
 
-var loud = flag.Bool("loud", false, "log everything")
+var setup = got.Setup(nil)
 
-func Test(t *testing.T) {
-	if !*loud {
-		log.SetOutput(ioutil.Discard)
-	}
+func TestBasic(t *testing.T) {
+	g := setup(t)
 
-	got.Each(t, T{})
-}
+	ctx := g.Context()
 
-type T struct {
-	got.G
-}
-
-func (t T) Basic() {
-	ctx := t.Context()
-
-	url := launcher.New().MustLaunch()
-
-	client := cdp.New(url).Websocket(nil).
-		Logger(utils.Log(func(msg ...interface{}) { fmt.Sprintln(msg...) })).
-		Header(http.Header{"test": {}}).MustConnect(ctx)
+	client := cdp.New().Logger(defaults.CDP).Start(cdp.MustConnectWS(launcher.New().MustLaunch()))
 
 	defer func() {
 		_, _ = client.Call(ctx, "", "Browser.close", nil)
@@ -47,16 +34,17 @@ func (t T) Basic() {
 
 	go func() {
 		for range client.Event() {
+			utils.Noop()
 		}
 	}()
 
 	file, err := filepath.Abs(filepath.FromSlash("fixtures/iframe.html"))
-	t.E(err)
+	g.E(err)
 
 	res, err := client.Call(ctx, "", "Target.createTarget", map[string]string{
 		"url": "file://" + file,
 	})
-	t.E(err)
+	g.E(err)
 
 	targetID := gson.New(res).Get("targetId").String()
 
@@ -64,19 +52,19 @@ func (t T) Basic() {
 		"targetId": targetID,
 		"flatten":  true, // if it's not set no response will return
 	})
-	t.E(err)
+	g.E(err)
 
 	sessionID := gson.New(res).Get("sessionId").String()
 
 	_, err = client.Call(ctx, sessionID, "Page.enable", nil)
-	t.E(err)
+	g.E(err)
 
 	_, err = client.Call(ctx, "", "Target.attachToTarget", map[string]interface{}{
 		"targetId": "abc",
 	})
-	t.Err(err)
+	g.Err(err)
 
-	timeout := t.Context()
+	timeout := g.Context()
 
 	sleeper := func() utils.Sleeper {
 		return utils.BackoffSleeper(30*time.Millisecond, 3*time.Second, nil)
@@ -88,9 +76,9 @@ func (t T) Basic() {
 	_, err = client.Call(tmpCtx, sessionID, "Runtime.evaluate", map[string]interface{}{
 		"expression": `10`,
 	})
-	t.Eq(err.Error(), context.Canceled.Error())
+	g.Eq(err.Error(), context.Canceled.Error())
 
-	t.E(utils.Retry(timeout, sleeper(), func() (bool, error) {
+	g.E(utils.Retry(timeout, sleeper(), func() (bool, error) {
 		res, err = client.Call(ctx, sessionID, "Runtime.evaluate", map[string]interface{}{
 			"expression": `document.querySelector('iframe')`,
 		})
@@ -101,19 +89,19 @@ func (t T) Basic() {
 	res, err = client.Call(ctx, sessionID, "DOM.describeNode", map[string]interface{}{
 		"objectId": gson.New(res).Get("result.objectId").String(),
 	})
-	t.E(err)
+	g.E(err)
 
 	frameID := gson.New(res).Get("node.frameId").String()
 
-	timeout = t.Context()
+	timeout = g.Context()
 
-	t.E(utils.Retry(timeout, sleeper(), func() (bool, error) {
+	g.E(utils.Retry(timeout, sleeper(), func() (bool, error) {
 		// we might need to recreate the world because world can be
 		// destroyed after the frame is reloaded
 		res, err = client.Call(ctx, sessionID, "Page.createIsolatedWorld", map[string]interface{}{
 			"frameId": frameID,
 		})
-		t.E(err)
+		g.E(err)
 
 		res, err = client.Call(ctx, sessionID, "Runtime.evaluate", map[string]interface{}{
 			"contextId":  gson.New(res).Get("executionContextId").Int(),
@@ -126,45 +114,43 @@ func (t T) Basic() {
 	res, err = client.Call(ctx, sessionID, "DOM.getOuterHTML", map[string]interface{}{
 		"objectId": gson.New(res).Get("result.objectId").String(),
 	})
-	t.E(err)
+	g.E(err)
 
-	t.Eq("<h4>it works</h4>", gson.New(res).Get("outerHTML").String())
+	g.Eq("<h4>it works</h4>", gson.New(res).Get("outerHTML").String())
 }
 
-func (t T) TestError() {
+func TestError(t *testing.T) {
+	g := setup(t)
+
 	cdpErr := cdp.Error{10, "err", "data"}
-	t.Eq(cdpErr.Error(), "{10 err data}")
+	g.Eq(cdpErr.Error(), "{10 err data}")
+	g.True(cdpErr.Is(&cdpErr))
 
-	t.Panic(func() {
-		cdp.New("").MustConnect(t.Context())
+	g.Panic(func() {
+		cdp.MustStartWithURL(context.Background(), "", nil)
 	})
 }
 
-func (t T) NewWithLogger() {
+func TestCrash(t *testing.T) {
+	g := setup(t)
 
-	t.Panic(func() {
-		cdp.New("").MustConnect(t.Context())
-	})
-}
+	ctx := g.Context()
 
-func (t T) Crash() {
-	ctx := t.Context()
-	l := launcher.New()
-
-	client := cdp.New(l.MustLaunch()).Logger(utils.LoggerQuiet).MustConnect(ctx)
+	client := cdp.MustStartWithURL(ctx, launcher.New().MustLaunch(), nil)
 
 	go func() {
 		for range client.Event() {
+			utils.Noop()
 		}
 	}()
 
 	file, err := filepath.Abs(filepath.FromSlash("fixtures/iframe.html"))
-	t.E(err)
+	g.E(err)
 
 	res, err := client.Call(ctx, "", "Target.createTarget", map[string]interface{}{
 		"url": "file://" + file,
 	})
-	t.E(err)
+	g.E(err)
 
 	targetID := gson.New(res).Get("targetId").String()
 
@@ -172,22 +158,200 @@ func (t T) Crash() {
 		"targetId": targetID,
 		"flatten":  true,
 	})
-	t.E(err)
+	g.E(err)
 
 	sessionID := gson.New(res).Get("sessionId").String()
 
 	_, err = client.Call(ctx, sessionID, "Page.enable", nil)
-	t.E(err)
+	g.E(err)
 
 	go func() {
-		utils.Sleep(2)
-		_, _ = client.Call(ctx, sessionID, "Browser.crash", nil)
+		utils.Sleep(1)
+		_, err := client.Call(ctx, sessionID, "Browser.crash", nil)
+		g.Eq(err, io.EOF)
 	}()
 
 	_, err = client.Call(ctx, sessionID, "Runtime.evaluate", map[string]interface{}{
 		"expression":   `new Promise(() => {})`,
 		"awaitPromise": true,
 	})
-	t.Is(err, cdp.ErrConnClosed)
-	t.Eq(err.Error(), "cdp connection closed: context canceled")
+	g.Eq(err, io.EOF)
+
+	_, err = client.Call(ctx, sessionID, "Runtime.evaluate", map[string]interface{}{
+		"expression": `10`,
+	})
+	g.Has(err.Error(), "use of closed network connection")
+}
+
+func TestFormat(t *testing.T) {
+	g := setup(t)
+
+	g.Eq(cdp.Request{
+		ID:        123,
+		SessionID: "000000001234",
+		Method:    "test",
+		Params:    1,
+	}.String(), `=> #123 @00000000 test 1`)
+
+	g.Eq(cdp.Response{
+		ID:     0,
+		Result: []byte("11"),
+	}.String(), "<= #0 11")
+
+	g.Eq(cdp.Response{Error: &cdp.Error{}}.String(), `<= #0 error: {"code":0,"message":"","data":""}`)
+
+	g.Eq(cdp.Event{
+		Method: "event",
+		Params: []byte("11"),
+	}.String(), `<- @00000000 event 11`)
+}
+
+func TestSlowSend(t *testing.T) {
+	g := setup(t)
+
+	gotrace.CheckLeak(g, 0)
+
+	id := 0
+	wait := make(chan int)
+
+	ws := &MockWebSocket{
+		send: func([]byte) error {
+			close(wait)
+			utils.Sleep(0.3)
+			return nil
+		},
+		read: func() ([]byte, error) {
+			if id > 0 {
+				return nil, io.EOF
+			}
+
+			id++
+			<-wait
+
+			return json.Marshal(cdp.Response{
+				ID:     id,
+				Result: json.RawMessage("1"),
+				Error:  nil,
+			})
+		},
+	}
+
+	c := cdp.New().Start(ws)
+	_, err := c.Call(g.Context(), "1234567890", "method", 1)
+	g.E(err)
+}
+
+func TestCancelCallLeak(t *testing.T) {
+	g := setup(t)
+
+	gotrace.CheckLeak(g, 0)
+
+	for i := 0; i < 30; i++ {
+		id := 0
+		wait := make(chan int)
+
+		ws := &MockWebSocket{
+			send: func([]byte) error {
+				close(wait)
+				utils.Sleep(0.01)
+				return nil
+			},
+			read: func() ([]byte, error) {
+				if id > 0 {
+					return nil, io.EOF
+				}
+
+				id++
+				<-wait
+
+				return json.Marshal(cdp.Response{
+					ID:     id,
+					Result: json.RawMessage("1"),
+					Error:  nil,
+				})
+			},
+		}
+
+		c := cdp.New().Start(ws)
+		ctx := g.Context()
+		ctx.Cancel()
+		_, _ = c.Call(ctx, "1234567890", "method", 1)
+	}
+}
+
+func TestConcurrentCall(t *testing.T) {
+	g := setup(t)
+
+	gotrace.CheckLeak(g, 0)
+
+	req := make(chan []byte, 30)
+	t.Cleanup(func() { close(req) })
+
+	ws := &MockWebSocket{
+		send: func(data []byte) error {
+			req <- data
+			return nil
+		},
+		read: func() ([]byte, error) {
+			data, ok := <-req
+			if !ok {
+				return nil, io.EOF
+			}
+
+			var req cdp.Request
+			err := json.Unmarshal(data, &req)
+			if err != nil {
+				return nil, err
+			}
+
+			return json.Marshal(cdp.Response{
+				ID:     req.ID,
+				Result: json.RawMessage(gson.New(req.Params).JSON("", "")),
+				Error:  nil,
+			})
+		},
+	}
+
+	c := cdp.New().Start(ws)
+
+	for i := 0; i < 1000; i++ {
+		i := i
+		t.Run(fmt.Sprintf("%v", i), func(t *testing.T) {
+			g := setup(t)
+			g.Parallel()
+
+			res, err := c.Call(g.Context(), "1234567890", "method", i)
+			g.E(err)
+			g.Eq(gson.New(res).Int(), i)
+		})
+	}
+}
+
+func TestMassBrowserClose(t *testing.T) {
+	t.Skip()
+
+	g := setup(t)
+	s := g.Serve()
+
+	for i := 0; i < 50; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
+			browser := rod.New().MustConnect()
+			browser.MustPage(s.URL()).MustWaitLoad().MustClose()
+			browser.MustClose()
+		})
+	}
+}
+
+type MockWebSocket struct {
+	send func(data []byte) error
+	read func() ([]byte, error)
+}
+
+func (c *MockWebSocket) Send(data []byte) error {
+	return c.send(data)
+}
+
+func (c *MockWebSocket) Read() ([]byte, error) {
+	return c.read()
 }

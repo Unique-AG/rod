@@ -1,3 +1,4 @@
+// Package main ...
 package main
 
 import (
@@ -10,15 +11,15 @@ import (
 func main() {
 	log.Println("setup project...")
 
-	goDeps()
+	golangDeps()
 
 	nodejsDeps()
 
 	genDockerIgnore()
 }
 
-func goDeps() {
-	utils.Exec("go", "install", "github.com/ysmood/golangci-lint@latest")
+func golangDeps() {
+	utils.Exec("go install mvdan.cc/gofumpt@latest")
 }
 
 func nodejsDeps() {
@@ -27,7 +28,7 @@ func nodejsDeps() {
 		log.Fatalln("please install Node.js: https://nodejs.org")
 	}
 
-	utils.Exec("npm", "i", "-q", "--no-audit", "--no-fund", "--silent", "eslint-plugin-html")
+	utils.Exec("npm i -s eslint-plugin-html")
 }
 
 func genDockerIgnore() {

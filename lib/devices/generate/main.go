@@ -1,9 +1,11 @@
+// Package main ...
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/Unique-AG/rod/lib/utils"
@@ -54,10 +56,6 @@ func main() {
 
 		package devices
 
-		import (
-			"github.com/Unique-AG/rod/lib/devices"
-		)
-
 		var (
 			{{.code}}
 		)
@@ -66,10 +64,11 @@ func main() {
 	path := "./lib/devices/list.go"
 	utils.E(utils.OutputFile(path, code))
 
-	utils.Exec("gofmt", "-s", "-w", path)
+	utils.Exec("gofumpt -w", path)
 	utils.Exec(
-		"golangci-lint", "--",
-		"run", "--no-config", "--fix", "--disable-all", "-E", "gofmt,goimports,misspell", path,
+		"go run github.com/ysmood/golangci-lint@latest -- "+
+			"run --fix",
+		filepath.Dir(path),
 	)
 }
 
@@ -106,8 +105,9 @@ func normalizeName(name string) string {
 func getUserAgent(val gson.JSON) string {
 	ua := val.Get("user-agent").String()
 	if ua == "" {
-		return "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_0_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+		return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 	}
+	ua = strings.ReplaceAll(ua, "%s", "114.0.0.0")
 	return ua
 }
 

@@ -58,7 +58,6 @@ const (
 
 // WebAuthnVirtualAuthenticatorOptions ...
 type WebAuthnVirtualAuthenticatorOptions struct {
-
 	// Protocol ...
 	Protocol WebAuthnAuthenticatorProtocol `json:"protocol"`
 
@@ -84,6 +83,16 @@ type WebAuthnVirtualAuthenticatorOptions struct {
 	// Defaults to false.
 	HasCredBlob bool `json:"hasCredBlob,omitempty"`
 
+	// HasMinPinLength (optional) If set to true, the authenticator will support the minPinLength extension.
+	// https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-20210615.html#sctn-minpinlength-extension
+	// Defaults to false.
+	HasMinPinLength bool `json:"hasMinPinLength,omitempty"`
+
+	// HasPrf (optional) If set to true, the authenticator will support the prf extension.
+	// https://w3c.github.io/webauthn/#prf-extension
+	// Defaults to false.
+	HasPrf bool `json:"hasPrf,omitempty"`
+
 	// AutomaticPresenceSimulation (optional) If set to true, tests of user presence will succeed immediately.
 	// Otherwise, they will not be resolved. Defaults to true.
 	AutomaticPresenceSimulation bool `json:"automaticPresenceSimulation,omitempty"`
@@ -95,7 +104,6 @@ type WebAuthnVirtualAuthenticatorOptions struct {
 
 // WebAuthnCredential ...
 type WebAuthnCredential struct {
-
 	// CredentialID ...
 	CredentialID []byte `json:"credentialId"`
 
@@ -126,6 +134,12 @@ type WebAuthnCredential struct {
 // WebAuthnEnable Enable the WebAuthn domain and start intercepting credential storage and
 // retrieval with a virtual authenticator.
 type WebAuthnEnable struct {
+	// EnableUI (optional) Whether to enable the WebAuthn user interface. Enabling the UI is
+	// recommended for debugging and demo purposes, as it is closer to the real
+	// experience. Disabling the UI is recommended for automated testing.
+	// Supported at the embedder's discretion if UI is available.
+	// Defaults to false.
+	EnableUI bool `json:"enableUI,omitempty"`
 }
 
 // ProtoReq name
@@ -137,8 +151,7 @@ func (m WebAuthnEnable) Call(c Client) error {
 }
 
 // WebAuthnDisable Disable the WebAuthn domain.
-type WebAuthnDisable struct {
-}
+type WebAuthnDisable struct{}
 
 // ProtoReq name
 func (m WebAuthnDisable) ProtoReq() string { return "WebAuthn.disable" }
@@ -150,7 +163,6 @@ func (m WebAuthnDisable) Call(c Client) error {
 
 // WebAuthnAddVirtualAuthenticator Creates and adds a virtual authenticator.
 type WebAuthnAddVirtualAuthenticator struct {
-
 	// Options ...
 	Options *WebAuthnVirtualAuthenticatorOptions `json:"options"`
 }
@@ -164,16 +176,40 @@ func (m WebAuthnAddVirtualAuthenticator) Call(c Client) (*WebAuthnAddVirtualAuth
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// WebAuthnAddVirtualAuthenticatorResult Creates and adds a virtual authenticator.
+// WebAuthnAddVirtualAuthenticatorResult ...
 type WebAuthnAddVirtualAuthenticatorResult struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 }
 
+// WebAuthnSetResponseOverrideBits Resets parameters isBogusSignature, isBadUV, isBadUP to false if they are not present.
+type WebAuthnSetResponseOverrideBits struct {
+	// AuthenticatorID ...
+	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
+
+	// IsBogusSignature (optional) If isBogusSignature is set, overrides the signature in the authenticator response to be zero.
+	// Defaults to false.
+	IsBogusSignature bool `json:"isBogusSignature,omitempty"`
+
+	// IsBadUV (optional) If isBadUV is set, overrides the UV bit in the flags in the authenticator response to
+	// be zero. Defaults to false.
+	IsBadUV bool `json:"isBadUV,omitempty"`
+
+	// IsBadUP (optional) If isBadUP is set, overrides the UP bit in the flags in the authenticator response to
+	// be zero. Defaults to false.
+	IsBadUP bool `json:"isBadUP,omitempty"`
+}
+
+// ProtoReq name
+func (m WebAuthnSetResponseOverrideBits) ProtoReq() string { return "WebAuthn.setResponseOverrideBits" }
+
+// Call sends the request
+func (m WebAuthnSetResponseOverrideBits) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
 // WebAuthnRemoveVirtualAuthenticator Removes the given authenticator.
 type WebAuthnRemoveVirtualAuthenticator struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 }
@@ -190,7 +226,6 @@ func (m WebAuthnRemoveVirtualAuthenticator) Call(c Client) error {
 
 // WebAuthnAddCredential Adds the credential to the specified authenticator.
 type WebAuthnAddCredential struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 
@@ -209,7 +244,6 @@ func (m WebAuthnAddCredential) Call(c Client) error {
 // WebAuthnGetCredential Returns a single credential stored in the given virtual authenticator that
 // matches the credential ID.
 type WebAuthnGetCredential struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 
@@ -226,17 +260,14 @@ func (m WebAuthnGetCredential) Call(c Client) (*WebAuthnGetCredentialResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// WebAuthnGetCredentialResult Returns a single credential stored in the given virtual authenticator that
-// matches the credential ID.
+// WebAuthnGetCredentialResult ...
 type WebAuthnGetCredentialResult struct {
-
 	// Credential ...
 	Credential *WebAuthnCredential `json:"credential"`
 }
 
 // WebAuthnGetCredentials Returns all the credentials stored in the given virtual authenticator.
 type WebAuthnGetCredentials struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 }
@@ -250,16 +281,14 @@ func (m WebAuthnGetCredentials) Call(c Client) (*WebAuthnGetCredentialsResult, e
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// WebAuthnGetCredentialsResult Returns all the credentials stored in the given virtual authenticator.
+// WebAuthnGetCredentialsResult ...
 type WebAuthnGetCredentialsResult struct {
-
 	// Credentials ...
 	Credentials []*WebAuthnCredential `json:"credentials"`
 }
 
 // WebAuthnRemoveCredential Removes a credential from the authenticator.
 type WebAuthnRemoveCredential struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 
@@ -277,7 +306,6 @@ func (m WebAuthnRemoveCredential) Call(c Client) error {
 
 // WebAuthnClearCredentials Clears all the credentials from the specified device.
 type WebAuthnClearCredentials struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 }
@@ -293,7 +321,6 @@ func (m WebAuthnClearCredentials) Call(c Client) error {
 // WebAuthnSetUserVerified Sets whether User Verification succeeds or fails for an authenticator.
 // The default is true.
 type WebAuthnSetUserVerified struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 
@@ -312,7 +339,6 @@ func (m WebAuthnSetUserVerified) Call(c Client) error {
 // WebAuthnSetAutomaticPresenceSimulation Sets whether tests of user presence will succeed immediately (if true) or fail to resolve (if false) for an authenticator.
 // The default is true.
 type WebAuthnSetAutomaticPresenceSimulation struct {
-
 	// AuthenticatorID ...
 	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
 
@@ -328,4 +354,32 @@ func (m WebAuthnSetAutomaticPresenceSimulation) ProtoReq() string {
 // Call sends the request
 func (m WebAuthnSetAutomaticPresenceSimulation) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
+}
+
+// WebAuthnCredentialAdded Triggered when a credential is added to an authenticator.
+type WebAuthnCredentialAdded struct {
+	// AuthenticatorID ...
+	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
+
+	// Credential ...
+	Credential *WebAuthnCredential `json:"credential"`
+}
+
+// ProtoEvent name
+func (evt WebAuthnCredentialAdded) ProtoEvent() string {
+	return "WebAuthn.credentialAdded"
+}
+
+// WebAuthnCredentialAsserted Triggered when a credential is used in a webauthn assertion.
+type WebAuthnCredentialAsserted struct {
+	// AuthenticatorID ...
+	AuthenticatorID WebAuthnAuthenticatorID `json:"authenticatorId"`
+
+	// Credential ...
+	Credential *WebAuthnCredential `json:"credential"`
+}
+
+// ProtoEvent name
+func (evt WebAuthnCredentialAsserted) ProtoEvent() string {
+	return "WebAuthn.credentialAsserted"
 }

@@ -18,11 +18,13 @@ type Client struct {
 	ret        interface{}
 }
 
-var _ proto.Client = &Client{}
-var _ proto.Sessionable = &Client{}
-var _ proto.Contextable = &Client{}
+var (
+	_ proto.Client      = &Client{}
+	_ proto.Sessionable = &Client{}
+	_ proto.Contextable = &Client{}
+)
 
-func (c *Client) Call(ctx context.Context, sessionID, methodName string, params interface{}) (res []byte, err error) {
+func (c *Client) Call(_ context.Context, sessionID, methodName string, params interface{}) (res []byte, err error) {
 	c.sessionID = sessionID
 	c.methodName = methodName
 	c.params = params
@@ -73,26 +75,6 @@ func (t T) TimeCodec() {
 	t.Eq(raw, data)
 }
 
-func (t T) NormalizeInputDispatchMouseEvent() {
-	e := proto.InputDispatchMouseEvent{
-		Type: proto.InputDispatchMouseEventTypeMouseWheel,
-	}
-
-	data, err := json.Marshal(e)
-	t.E(err)
-
-	t.Eq(`{"type":"mouseWheel","x":0,"y":0,"deltaX":0,"deltaY":0}`, string(data))
-
-	ee := proto.InputDispatchMouseEvent{
-		Type: proto.InputDispatchMouseEventTypeMouseMoved,
-	}
-
-	data, err = json.Marshal(ee)
-	t.E(err)
-
-	t.Eq(`{"type":"mouseMoved","x":0,"y":0}`, string(data))
-}
-
 func (t T) Rect() {
 	rect := proto.DOMQuad{
 		336, 382, 361, 382, 361, 421, 336, 412,
@@ -111,7 +93,6 @@ func (t T) Rect() {
 	pt := res.OnePointInside()
 	t.Eq(348.5, pt.X)
 	t.Eq(399.25, pt.Y)
-
 }
 
 func (t T) Area() {

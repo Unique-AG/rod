@@ -26,31 +26,22 @@ type EvalOptions struct {
 	// ThisObj represents the "this" object in the JS
 	ThisObj *proto.RuntimeRemoteObject
 
-	// JS code to eval. It can be an expression or function definition. If it's a function definition
-	// the function will be executed with the JSArgs. Such as
-	//     1 + 2
-	// is the same as
-	//     () => 1 + 2
-	// or
-	//     function() {
-	//         return 1 + 2
-	//     }
+	// JS function definition to execute.
 	JS string
 
-	// JSArgs represents the arguments in the JS if the JS is a function definition.
-	// If an argument is *proto.RuntimeRemoteObject type, the corresponding remote object will be used.
+	// JSArgs represents the arguments that will be passed to JS.
+	// If an argument is [*proto.RuntimeRemoteObject] type, the corresponding remote object will be used.
 	// Or it will be passed as a plain JSON value.
+	// When an arg in the args is a *js.Function, the arg will be cached on the page's js context.
+	// When the arg.Name exists in the page's cache, it reuse the cache without sending the definition to the browser again.
+	// Useful when you need to eval a huge js expression many times.
 	JSArgs []interface{}
 
 	// Whether execution should be treated as initiated by user in the UI.
 	UserGesture bool
 }
 
-// Eval creates a EvalOptions with ByValue set to true.
-//
-// When an arg in the args is a *js.Function, the arg will be cached on the page's js context.
-// When the arg.Name exists in the page's cache, it reuse the cache without sending the definition to the browser again.
-// Useful when you need to eval a huge js expression many times.
+// Eval creates a [EvalOptions] with ByValue set to true.
 func Eval(js string, args ...interface{}) *EvalOptions {
 	return &EvalOptions{
 		ByValue:      true,
@@ -66,7 +57,7 @@ func evalHelper(fn *js.Function, args ...interface{}) *EvalOptions {
 	return &EvalOptions{
 		ByValue: true,
 		JSArgs:  append([]interface{}{fn}, args...),
-		JS:      `(f, ...args) => f.apply(this, args)`,
+		JS:      fmt.Sprintf(`function (f /* %s */, ...args) { return f.apply(this, args) }`, fn.Name),
 	}
 }
 
@@ -118,16 +109,13 @@ func (e *EvalOptions) ByPromise() *EvalOptions {
 }
 
 func (e *EvalOptions) formatToJSFunc() string {
-	js := strings.TrimSpace(e.JS)
-	if detectJSFunction(js) {
-		return fmt.Sprintf(`function() { return (%s).apply(this, arguments) }`, js)
-	}
-	return fmt.Sprintf(`function() { return %s }`, js)
+	js := strings.Trim(e.JS, "\t\n\v\f\r ;")
+	return fmt.Sprintf(`function() { return (%s).apply(this, arguments) }`, js)
 }
 
-// Eval is just a shortcut for Page.Evaluate with AwaitPromise set true.
-func (p *Page) Eval(js string, jsArgs ...interface{}) (*proto.RuntimeRemoteObject, error) {
-	return p.Evaluate(Eval(js, jsArgs...).ByPromise())
+// Eval is a shortcut for [Page.Evaluate] with AwaitPromise, ByValue set to true.
+func (p *Page) Eval(js string, args ...interface{}) (*proto.RuntimeRemoteObject, error) {
+	return p.Evaluate(Eval(js, args...).ByPromise())
 }
 
 // Evaluate js on the page.
@@ -202,13 +190,12 @@ func (p *Page) Expose(name string, fn func(gson.JSON) (interface{}, error)) (sto
 		return
 	}
 
-	code := fmt.Sprintf(`(%s)("%s", "%s")`, js.ExposeFunc.Definition, name, bind)
-
-	_, err = p.Evaluate(Eval(code))
+	_, err = p.Evaluate(Eval(js.ExposeFunc.Definition, name, bind))
 	if err != nil {
 		return
 	}
 
+	code := fmt.Sprintf(`(%s)("%s", "%s")`, js.ExposeFunc.Definition, name, bind)
 	remove, err := p.EvalOnNewDocument(code)
 	if err != nil {
 		return
@@ -238,22 +225,22 @@ func (p *Page) Expose(name string, fn func(gson.JSON) (interface{}, error)) (sto
 }
 
 func (p *Page) formatArgs(opts *EvalOptions) ([]*proto.RuntimeCallArgument, error) {
-	formated := []*proto.RuntimeCallArgument{}
+	formatted := []*proto.RuntimeCallArgument{}
 	for _, arg := range opts.JSArgs {
 		if obj, ok := arg.(*proto.RuntimeRemoteObject); ok { // remote object
-			formated = append(formated, &proto.RuntimeCallArgument{ObjectID: obj.ObjectID})
+			formatted = append(formatted, &proto.RuntimeCallArgument{ObjectID: obj.ObjectID})
 		} else if obj, ok := arg.(*js.Function); ok { // js helper
 			id, err := p.ensureJSHelper(obj)
 			if err != nil {
 				return nil, err
 			}
-			formated = append(formated, &proto.RuntimeCallArgument{ObjectID: id})
+			formatted = append(formatted, &proto.RuntimeCallArgument{ObjectID: id})
 		} else { // plain json data
-			formated = append(formated, &proto.RuntimeCallArgument{Value: gson.New(arg)})
+			formatted = append(formatted, &proto.RuntimeCallArgument{Value: gson.New(arg)})
 		}
 	}
 
-	return formated, nil
+	return formatted, nil
 }
 
 // Check the doc of EvalHelper
@@ -263,19 +250,7 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 		return "", err
 	}
 
-	p.helpersLock.Lock()
-	if p.helpers == nil {
-		p.helpers = map[proto.RuntimeRemoteObjectID]map[string]proto.RuntimeRemoteObjectID{}
-	}
-
-	list, ok := p.helpers[jsCtxID]
-	if !ok {
-		list = map[string]proto.RuntimeRemoteObjectID{}
-		p.helpers[jsCtxID] = list
-	}
-	p.helpersLock.Unlock()
-
-	fns, has := list[js.Functions.Name]
+	fnID, has := p.getHelper(jsCtxID, js.Functions.Name)
 	if !has {
 		res, err := proto.RuntimeCallFunctionOn{
 			ObjectID:            jsCtxID,
@@ -284,11 +259,11 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 		if err != nil {
 			return "", err
 		}
-		fns = res.Result.ObjectID
-		list[js.Functions.Name] = fns
+		fnID = res.Result.ObjectID
+		p.setHelper(jsCtxID, js.Functions.Name, fnID)
 	}
 
-	id, has := list[fn.Name]
+	id, has := p.getHelper(jsCtxID, fn.Name)
 	if !has {
 		for _, dep := range fn.Dependencies {
 			_, err := p.ensureJSHelper(dep)
@@ -299,7 +274,7 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 
 		res, err := proto.RuntimeCallFunctionOn{
 			ObjectID:  jsCtxID,
-			Arguments: []*proto.RuntimeCallArgument{{ObjectID: fns}},
+			Arguments: []*proto.RuntimeCallArgument{{ObjectID: fnID}},
 
 			FunctionDeclaration: fmt.Sprintf(
 				// we only need the object id, but the cdp will return the whole function string.
@@ -313,10 +288,35 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 		}
 
 		id = res.Result.ObjectID
-		list[fn.Name] = id
+		p.setHelper(jsCtxID, fn.Name, id)
 	}
 
 	return id, nil
+}
+
+func (p *Page) getHelper(jsCtxID proto.RuntimeRemoteObjectID, name string) (proto.RuntimeRemoteObjectID, bool) {
+	p.helpersLock.Lock()
+	defer p.helpersLock.Unlock()
+
+	if p.helpers == nil {
+		p.helpers = map[proto.RuntimeRemoteObjectID]map[string]proto.RuntimeRemoteObjectID{}
+	}
+
+	list, ok := p.helpers[jsCtxID]
+	if !ok {
+		list = map[string]proto.RuntimeRemoteObjectID{}
+		p.helpers[jsCtxID] = list
+	}
+
+	id, ok := list[name]
+	return id, ok
+}
+
+func (p *Page) setHelper(jsCtxID proto.RuntimeRemoteObjectID, name string, fnID proto.RuntimeRemoteObjectID) {
+	p.helpersLock.Lock()
+	defer p.helpersLock.Unlock()
+
+	p.helpers[jsCtxID][name] = fnID
 }
 
 // Returns the page's window object, the page can be an iframe
@@ -341,17 +341,12 @@ func (p *Page) getJSCtxID() (proto.RuntimeRemoteObjectID, error) {
 		return *p.jsCtxID, nil
 	}
 
-	owner, err := proto.DOMGetFrameOwner{FrameID: p.FrameID}.Call(p)
+	node, err := p.element.Describe(1, true)
 	if err != nil {
 		return "", err
 	}
 
-	node, err := proto.DOMDescribeNode{BackendNodeID: owner.BackendNodeID, Pierce: true}.Call(p)
-	if err != nil {
-		return "", err
-	}
-
-	obj, err := proto.DOMResolveNode{BackendNodeID: node.Node.ContentDocument.BackendNodeID}.Call(p)
+	obj, err := proto.DOMResolveNode{BackendNodeID: node.ContentDocument.BackendNodeID}.Call(p)
 	if err != nil {
 		return "", err
 	}

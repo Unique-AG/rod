@@ -10,7 +10,6 @@ Input
 
 // InputTouchPoint ...
 type InputTouchPoint struct {
-
 	// X X coordinate of the event relative to the main frame's viewport in CSS pixels.
 	X float64 `json:"x"`
 
@@ -19,16 +18,16 @@ type InputTouchPoint struct {
 	Y float64 `json:"y"`
 
 	// RadiusX (optional) X radius of the touch area (default: 1.0).
-	RadiusX float64 `json:"radiusX,omitempty"`
+	RadiusX *float64 `json:"radiusX,omitempty"`
 
 	// RadiusY (optional) Y radius of the touch area (default: 1.0).
-	RadiusY float64 `json:"radiusY,omitempty"`
+	RadiusY *float64 `json:"radiusY,omitempty"`
 
 	// RotationAngle (optional) Rotation angle (default: 0.0).
-	RotationAngle float64 `json:"rotationAngle,omitempty"`
+	RotationAngle *float64 `json:"rotationAngle,omitempty"`
 
 	// Force (optional) Force (default: 1.0).
-	Force float64 `json:"force,omitempty"`
+	Force *float64 `json:"force,omitempty"`
 
 	// TangentialPressure (experimental) (optional) The normalized tangential pressure, which has a range of [-1,1] (default: 0).
 	TangentialPressure float64 `json:"tangentialPressure,omitempty"`
@@ -43,7 +42,7 @@ type InputTouchPoint struct {
 	Twist int `json:"twist,omitempty"`
 
 	// ID (optional) Identifier used to track touch sources between events, must be unique within an event.
-	ID float64 `json:"id,omitempty"`
+	ID *float64 `json:"id,omitempty"`
 }
 
 // InputGestureSourceType (experimental) ...
@@ -85,7 +84,6 @@ const (
 
 // InputDragDataItem (experimental) ...
 type InputDragDataItem struct {
-
 	// MIMEType Mime type of the dragged data.
 	MIMEType string `json:"mimeType"`
 
@@ -103,9 +101,11 @@ type InputDragDataItem struct {
 
 // InputDragData (experimental) ...
 type InputDragData struct {
-
 	// Items ...
 	Items []*InputDragDataItem `json:"items"`
+
+	// Files (optional) List of filenames that should be included when dropping
+	Files []string `json:"files,omitempty"`
 
 	// DragOperationsMask Bit field representing allowed drag operations. Copy = 1, Link = 2, Move = 16
 	DragOperationsMask int `json:"dragOperationsMask"`
@@ -130,7 +130,6 @@ const (
 
 // InputDispatchDragEvent (experimental) Dispatches a drag event into the page.
 type InputDispatchDragEvent struct {
-
 	// Type Type of the drag event.
 	Type InputDispatchDragEventType `json:"type"`
 
@@ -176,7 +175,6 @@ const (
 
 // InputDispatchKeyEvent Dispatches a key event to the page.
 type InputDispatchKeyEvent struct {
-
 	// Type Type of the key event.
 	Type InputDispatchKeyEventType `json:"type"`
 
@@ -222,11 +220,11 @@ type InputDispatchKeyEvent struct {
 
 	// Location (optional) Whether the event was from the left or right side of the keyboard. 1=Left, 2=Right (default:
 	// 0).
-	Location int `json:"location,omitempty"`
+	Location *int `json:"location,omitempty"`
 
 	// Commands (experimental) (optional) Editing commands to send with the key event (e.g., 'selectAll') (default: []).
 	// These are related to but not equal the command names used in `document.execCommand` and NSStandardKeyBindingResponding.
-	// See https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/core/editing/commands/editor_command_names.h for valid command names.
+	// See https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/editing/commands/editor_command_names.h for valid command names.
 	Commands []string `json:"commands,omitempty"`
 }
 
@@ -241,7 +239,6 @@ func (m InputDispatchKeyEvent) Call(c Client) error {
 // InputInsertText (experimental) This method emulates inserting text that doesn't come from a key press,
 // for example an emoji keyboard or an IME.
 type InputInsertText struct {
-
 	// Text The text to insert.
 	Text string `json:"text"`
 }
@@ -251,6 +248,34 @@ func (m InputInsertText) ProtoReq() string { return "Input.insertText" }
 
 // Call sends the request
 func (m InputInsertText) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
+// InputImeSetComposition (experimental) This method sets the current candidate text for ime.
+// Use imeCommitComposition to commit the final text.
+// Use imeSetComposition with empty string as text to cancel composition.
+type InputImeSetComposition struct {
+	// Text The text to insert
+	Text string `json:"text"`
+
+	// SelectionStart selection start
+	SelectionStart int `json:"selectionStart"`
+
+	// SelectionEnd selection end
+	SelectionEnd int `json:"selectionEnd"`
+
+	// ReplacementStart (optional) replacement start
+	ReplacementStart *int `json:"replacementStart,omitempty"`
+
+	// ReplacementEnd (optional) replacement end
+	ReplacementEnd *int `json:"replacementEnd,omitempty"`
+}
+
+// ProtoReq name
+func (m InputImeSetComposition) ProtoReq() string { return "Input.imeSetComposition" }
+
+// Call sends the request
+func (m InputImeSetComposition) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
@@ -284,7 +309,6 @@ const (
 
 // InputDispatchMouseEvent Dispatches a mouse event to the page.
 type InputDispatchMouseEvent struct {
-
 	// Type Type of the mouse event.
 	Type InputDispatchMouseEventType `json:"type"`
 
@@ -307,7 +331,7 @@ type InputDispatchMouseEvent struct {
 
 	// Buttons (optional) A number indicating which buttons are pressed on the mouse when a mouse event is triggered.
 	// Left=1, Right=2, Middle=4, Back=8, Forward=16, None=0.
-	Buttons int `json:"buttons,omitempty"`
+	Buttons *int `json:"buttons,omitempty"`
 
 	// ClickCount (optional) Number of times the mouse button was clicked (default: 0).
 	ClickCount int `json:"clickCount,omitempty"`
@@ -327,11 +351,11 @@ type InputDispatchMouseEvent struct {
 	// Twist (experimental) (optional) The clockwise rotation of a pen stylus around its own major axis, in degrees in the range [0,359] (default: 0).
 	Twist int `json:"twist,omitempty"`
 
-	// DeltaX (optional) X delta in CSS pixels for mouse wheel event (default: 0).
-	DeltaX float64 `json:"deltaX,omitempty"`
+	// DeltaX X delta in CSS pixels for mouse wheel event (default: 0).
+	DeltaX float64 `json:"deltaX"`
 
-	// DeltaY (optional) Y delta in CSS pixels for mouse wheel event (default: 0).
-	DeltaY float64 `json:"deltaY,omitempty"`
+	// DeltaY Y delta in CSS pixels for mouse wheel event (default: 0).
+	DeltaY float64 `json:"deltaY"`
 
 	// PointerType (optional) Pointer type (default: "mouse").
 	PointerType InputDispatchMouseEventPointerType `json:"pointerType,omitempty"`
@@ -364,7 +388,6 @@ const (
 
 // InputDispatchTouchEvent Dispatches a touch event to the page.
 type InputDispatchTouchEvent struct {
-
 	// Type Type of the touch event. TouchEnd and TouchCancel must not contain any touch points, while
 	// TouchStart and TouchMove must contains at least one.
 	Type InputDispatchTouchEventType `json:"type"`
@@ -409,7 +432,6 @@ const (
 
 // InputEmulateTouchFromMouseEvent (experimental) Emulates touch event from the mouse event parameters.
 type InputEmulateTouchFromMouseEvent struct {
-
 	// Type Type of the mouse event.
 	Type InputEmulateTouchFromMouseEventType `json:"type"`
 
@@ -449,7 +471,6 @@ func (m InputEmulateTouchFromMouseEvent) Call(c Client) error {
 
 // InputSetIgnoreInputEvents Ignores input events (useful while auditing page).
 type InputSetIgnoreInputEvents struct {
-
 	// Ignore Ignores input events processing when set to true.
 	Ignore bool `json:"ignore"`
 }
@@ -465,7 +486,6 @@ func (m InputSetIgnoreInputEvents) Call(c Client) error {
 // InputSetInterceptDrags (experimental) Prevents default drag and drop behavior and instead emits `Input.dragIntercepted` events.
 // Drag and drop behavior can be directly controlled via `Input.dispatchDragEvent`.
 type InputSetInterceptDrags struct {
-
 	// Enabled ...
 	Enabled bool `json:"enabled"`
 }
@@ -480,7 +500,6 @@ func (m InputSetInterceptDrags) Call(c Client) error {
 
 // InputSynthesizePinchGesture (experimental) Synthesizes a pinch gesture over a time period by issuing appropriate touch events.
 type InputSynthesizePinchGesture struct {
-
 	// X X coordinate of the start of the gesture in CSS pixels.
 	X float64 `json:"x"`
 
@@ -491,7 +510,7 @@ type InputSynthesizePinchGesture struct {
 	ScaleFactor float64 `json:"scaleFactor"`
 
 	// RelativeSpeed (optional) Relative pointer speed in pixels per second (default: 800).
-	RelativeSpeed int `json:"relativeSpeed,omitempty"`
+	RelativeSpeed *int `json:"relativeSpeed,omitempty"`
 
 	// GestureSourceType (optional) Which type of input events to be generated (default: 'default', which queries the platform
 	// for the preferred input type).
@@ -508,7 +527,6 @@ func (m InputSynthesizePinchGesture) Call(c Client) error {
 
 // InputSynthesizeScrollGesture (experimental) Synthesizes a scroll gesture over a time period by issuing appropriate touch events.
 type InputSynthesizeScrollGesture struct {
-
 	// X X coordinate of the start of the gesture in CSS pixels.
 	X float64 `json:"x"`
 
@@ -516,24 +534,24 @@ type InputSynthesizeScrollGesture struct {
 	Y float64 `json:"y"`
 
 	// XDistance (optional) The distance to scroll along the X axis (positive to scroll left).
-	XDistance float64 `json:"xDistance,omitempty"`
+	XDistance *float64 `json:"xDistance,omitempty"`
 
 	// YDistance (optional) The distance to scroll along the Y axis (positive to scroll up).
-	YDistance float64 `json:"yDistance,omitempty"`
+	YDistance *float64 `json:"yDistance,omitempty"`
 
 	// XOverscroll (optional) The number of additional pixels to scroll back along the X axis, in addition to the given
 	// distance.
-	XOverscroll float64 `json:"xOverscroll,omitempty"`
+	XOverscroll *float64 `json:"xOverscroll,omitempty"`
 
 	// YOverscroll (optional) The number of additional pixels to scroll back along the Y axis, in addition to the given
 	// distance.
-	YOverscroll float64 `json:"yOverscroll,omitempty"`
+	YOverscroll *float64 `json:"yOverscroll,omitempty"`
 
 	// PreventFling (optional) Prevent fling (default: true).
 	PreventFling bool `json:"preventFling,omitempty"`
 
 	// Speed (optional) Swipe speed in pixels per second (default: 800).
-	Speed int `json:"speed,omitempty"`
+	Speed *int `json:"speed,omitempty"`
 
 	// GestureSourceType (optional) Which type of input events to be generated (default: 'default', which queries the platform
 	// for the preferred input type).
@@ -543,7 +561,7 @@ type InputSynthesizeScrollGesture struct {
 	RepeatCount int `json:"repeatCount,omitempty"`
 
 	// RepeatDelayMs (optional) The number of milliseconds delay between each repeat. (default: 250).
-	RepeatDelayMs int `json:"repeatDelayMs,omitempty"`
+	RepeatDelayMs *int `json:"repeatDelayMs,omitempty"`
 
 	// InteractionMarkerName (optional) The name of the interaction markers to generate, if not empty (default: "").
 	InteractionMarkerName string `json:"interactionMarkerName,omitempty"`
@@ -559,7 +577,6 @@ func (m InputSynthesizeScrollGesture) Call(c Client) error {
 
 // InputSynthesizeTapGesture (experimental) Synthesizes a tap gesture over a time period by issuing appropriate touch events.
 type InputSynthesizeTapGesture struct {
-
 	// X X coordinate of the start of the gesture in CSS pixels.
 	X float64 `json:"x"`
 
@@ -567,10 +584,10 @@ type InputSynthesizeTapGesture struct {
 	Y float64 `json:"y"`
 
 	// Duration (optional) Duration between touchdown and touchup events in ms (default: 50).
-	Duration int `json:"duration,omitempty"`
+	Duration *int `json:"duration,omitempty"`
 
 	// TapCount (optional) Number of times to perform the tap (e.g. 2 for double tap, default: 1).
-	TapCount int `json:"tapCount,omitempty"`
+	TapCount *int `json:"tapCount,omitempty"`
 
 	// GestureSourceType (optional) Which type of input events to be generated (default: 'default', which queries the platform
 	// for the preferred input type).
@@ -588,7 +605,6 @@ func (m InputSynthesizeTapGesture) Call(c Client) error {
 // InputDragIntercepted (experimental) Emitted only when `Input.setInterceptDrags` is enabled. Use this data with `Input.dispatchDragEvent` to
 // restore normal drag and drop behavior.
 type InputDragIntercepted struct {
-
 	// Data ...
 	Data *InputDragData `json:"data"`
 }

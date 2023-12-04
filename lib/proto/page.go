@@ -43,12 +43,22 @@ const (
 
 // PageAdFrameStatus (experimental) Indicates whether a frame has been identified as an ad and why.
 type PageAdFrameStatus struct {
-
 	// AdFrameType ...
 	AdFrameType PageAdFrameType `json:"adFrameType"`
 
 	// Explanations (optional) ...
 	Explanations []PageAdFrameExplanation `json:"explanations,omitempty"`
+}
+
+// PageAdScriptID (experimental) Identifies the bottom-most script which caused the frame to be labelled
+// as an ad.
+type PageAdScriptID struct {
+	// ScriptID Script Id of the bottom-most script which caused the frame to be labelled
+	// as an ad.
+	ScriptID RuntimeScriptID `json:"scriptId"`
+
+	// DebuggerID Id of adScriptId's debugger.
+	DebuggerID RuntimeUniqueDebuggerID `json:"debuggerId"`
 }
 
 // PageSecureContextType (experimental) Indicates whether the frame is a secure context and why it is the case.
@@ -116,6 +126,12 @@ const (
 	// PagePermissionsPolicyFeatureAutoplay enum const
 	PagePermissionsPolicyFeatureAutoplay PagePermissionsPolicyFeature = "autoplay"
 
+	// PagePermissionsPolicyFeatureBluetooth enum const
+	PagePermissionsPolicyFeatureBluetooth PagePermissionsPolicyFeature = "bluetooth"
+
+	// PagePermissionsPolicyFeatureBrowsingTopics enum const
+	PagePermissionsPolicyFeatureBrowsingTopics PagePermissionsPolicyFeature = "browsing-topics"
+
 	// PagePermissionsPolicyFeatureCamera enum const
 	PagePermissionsPolicyFeatureCamera PagePermissionsPolicyFeature = "camera"
 
@@ -129,16 +145,19 @@ const (
 	PagePermissionsPolicyFeatureChDownlink PagePermissionsPolicyFeature = "ch-downlink"
 
 	// PagePermissionsPolicyFeatureChEct enum const
-	PagePermissionsPolicyFeatureChEct PagePermissionsPolicyFeature = "ch-etc"
-
-	// PagePermissionsPolicyFeatureChLang enum const
-	PagePermissionsPolicyFeatureChLang PagePermissionsPolicyFeature = "ch-lang"
+	PagePermissionsPolicyFeatureChEct PagePermissionsPolicyFeature = "ch-ect"
 
 	// PagePermissionsPolicyFeatureChPrefersColorScheme enum const
 	PagePermissionsPolicyFeatureChPrefersColorScheme PagePermissionsPolicyFeature = "ch-prefers-color-scheme"
 
+	// PagePermissionsPolicyFeatureChPrefersReducedMotion enum const
+	PagePermissionsPolicyFeatureChPrefersReducedMotion PagePermissionsPolicyFeature = "ch-prefers-reduced-motion"
+
 	// PagePermissionsPolicyFeatureChRtt enum const
 	PagePermissionsPolicyFeatureChRtt PagePermissionsPolicyFeature = "ch-rtt"
+
+	// PagePermissionsPolicyFeatureChSaveData enum const
+	PagePermissionsPolicyFeatureChSaveData PagePermissionsPolicyFeature = "ch-save-data"
 
 	// PagePermissionsPolicyFeatureChUa enum const
 	PagePermissionsPolicyFeatureChUa PagePermissionsPolicyFeature = "ch-ua"
@@ -158,11 +177,26 @@ const (
 	// PagePermissionsPolicyFeatureChUaMobile enum const
 	PagePermissionsPolicyFeatureChUaMobile PagePermissionsPolicyFeature = "ch-ua-mobile"
 
+	// PagePermissionsPolicyFeatureChUaFull enum const
+	PagePermissionsPolicyFeatureChUaFull PagePermissionsPolicyFeature = "ch-ua-full"
+
 	// PagePermissionsPolicyFeatureChUaFullVersion enum const
 	PagePermissionsPolicyFeatureChUaFullVersion PagePermissionsPolicyFeature = "ch-ua-full-version"
 
+	// PagePermissionsPolicyFeatureChUaFullVersionList enum const
+	PagePermissionsPolicyFeatureChUaFullVersionList PagePermissionsPolicyFeature = "ch-ua-full-version-list"
+
 	// PagePermissionsPolicyFeatureChUaPlatformVersion enum const
 	PagePermissionsPolicyFeatureChUaPlatformVersion PagePermissionsPolicyFeature = "ch-ua-platform-version"
+
+	// PagePermissionsPolicyFeatureChUaReduced enum const
+	PagePermissionsPolicyFeatureChUaReduced PagePermissionsPolicyFeature = "ch-ua-reduced"
+
+	// PagePermissionsPolicyFeatureChUaWow64 enum const
+	PagePermissionsPolicyFeatureChUaWow64 PagePermissionsPolicyFeature = "ch-ua-wow64"
+
+	// PagePermissionsPolicyFeatureChViewportHeight enum const
+	PagePermissionsPolicyFeatureChViewportHeight PagePermissionsPolicyFeature = "ch-viewport-height"
 
 	// PagePermissionsPolicyFeatureChViewportWidth enum const
 	PagePermissionsPolicyFeatureChViewportWidth PagePermissionsPolicyFeature = "ch-viewport-width"
@@ -175,6 +209,9 @@ const (
 
 	// PagePermissionsPolicyFeatureClipboardWrite enum const
 	PagePermissionsPolicyFeatureClipboardWrite PagePermissionsPolicyFeature = "clipboard-write"
+
+	// PagePermissionsPolicyFeatureComputePressure enum const
+	PagePermissionsPolicyFeatureComputePressure PagePermissionsPolicyFeature = "compute-pressure"
 
 	// PagePermissionsPolicyFeatureCrossOriginIsolated enum const
 	PagePermissionsPolicyFeatureCrossOriginIsolated PagePermissionsPolicyFeature = "cross-origin-isolated"
@@ -218,11 +255,23 @@ const (
 	// PagePermissionsPolicyFeatureHid enum const
 	PagePermissionsPolicyFeatureHid PagePermissionsPolicyFeature = "hid"
 
+	// PagePermissionsPolicyFeatureIdentityCredentialsGet enum const
+	PagePermissionsPolicyFeatureIdentityCredentialsGet PagePermissionsPolicyFeature = "identity-credentials-get"
+
 	// PagePermissionsPolicyFeatureIdleDetection enum const
 	PagePermissionsPolicyFeatureIdleDetection PagePermissionsPolicyFeature = "idle-detection"
 
 	// PagePermissionsPolicyFeatureInterestCohort enum const
 	PagePermissionsPolicyFeatureInterestCohort PagePermissionsPolicyFeature = "interest-cohort"
+
+	// PagePermissionsPolicyFeatureJoinAdInterestGroup enum const
+	PagePermissionsPolicyFeatureJoinAdInterestGroup PagePermissionsPolicyFeature = "join-ad-interest-group"
+
+	// PagePermissionsPolicyFeatureKeyboardMap enum const
+	PagePermissionsPolicyFeatureKeyboardMap PagePermissionsPolicyFeature = "keyboard-map"
+
+	// PagePermissionsPolicyFeatureLocalFonts enum const
+	PagePermissionsPolicyFeatureLocalFonts PagePermissionsPolicyFeature = "local-fonts"
 
 	// PagePermissionsPolicyFeatureMagnetometer enum const
 	PagePermissionsPolicyFeatureMagnetometer PagePermissionsPolicyFeature = "magnetometer"
@@ -242,8 +291,14 @@ const (
 	// PagePermissionsPolicyFeaturePictureInPicture enum const
 	PagePermissionsPolicyFeaturePictureInPicture PagePermissionsPolicyFeature = "picture-in-picture"
 
+	// PagePermissionsPolicyFeaturePrivateAggregation enum const
+	PagePermissionsPolicyFeaturePrivateAggregation PagePermissionsPolicyFeature = "private-aggregation"
+
 	// PagePermissionsPolicyFeaturePublickeyCredentialsGet enum const
 	PagePermissionsPolicyFeaturePublickeyCredentialsGet PagePermissionsPolicyFeature = "publickey-credentials-get"
+
+	// PagePermissionsPolicyFeatureRunAdAuction enum const
+	PagePermissionsPolicyFeatureRunAdAuction PagePermissionsPolicyFeature = "run-ad-auction"
 
 	// PagePermissionsPolicyFeatureScreenWakeLock enum const
 	PagePermissionsPolicyFeatureScreenWakeLock PagePermissionsPolicyFeature = "screen-wake-lock"
@@ -254,14 +309,26 @@ const (
 	// PagePermissionsPolicyFeatureSharedAutofill enum const
 	PagePermissionsPolicyFeatureSharedAutofill PagePermissionsPolicyFeature = "shared-autofill"
 
-	// PagePermissionsPolicyFeatureStorageAccessAPI enum const
-	PagePermissionsPolicyFeatureStorageAccessAPI PagePermissionsPolicyFeature = "storage-access-api"
+	// PagePermissionsPolicyFeatureSharedStorage enum const
+	PagePermissionsPolicyFeatureSharedStorage PagePermissionsPolicyFeature = "shared-storage"
+
+	// PagePermissionsPolicyFeatureSharedStorageSelectURL enum const
+	PagePermissionsPolicyFeatureSharedStorageSelectURL PagePermissionsPolicyFeature = "shared-storage-select-url"
+
+	// PagePermissionsPolicyFeatureSmartCard enum const
+	PagePermissionsPolicyFeatureSmartCard PagePermissionsPolicyFeature = "smart-card"
+
+	// PagePermissionsPolicyFeatureStorageAccess enum const
+	PagePermissionsPolicyFeatureStorageAccess PagePermissionsPolicyFeature = "storage-access"
 
 	// PagePermissionsPolicyFeatureSyncXhr enum const
 	PagePermissionsPolicyFeatureSyncXhr PagePermissionsPolicyFeature = "sync-xhr"
 
 	// PagePermissionsPolicyFeatureTrustTokenRedemption enum const
 	PagePermissionsPolicyFeatureTrustTokenRedemption PagePermissionsPolicyFeature = "trust-token-redemption"
+
+	// PagePermissionsPolicyFeatureUnload enum const
+	PagePermissionsPolicyFeatureUnload PagePermissionsPolicyFeature = "unload"
 
 	// PagePermissionsPolicyFeatureUsb enum const
 	PagePermissionsPolicyFeatureUsb PagePermissionsPolicyFeature = "usb"
@@ -271,6 +338,9 @@ const (
 
 	// PagePermissionsPolicyFeatureWebShare enum const
 	PagePermissionsPolicyFeatureWebShare PagePermissionsPolicyFeature = "web-share"
+
+	// PagePermissionsPolicyFeatureWindowManagement enum const
+	PagePermissionsPolicyFeatureWindowManagement PagePermissionsPolicyFeature = "window-management"
 
 	// PagePermissionsPolicyFeatureWindowPlacement enum const
 	PagePermissionsPolicyFeatureWindowPlacement PagePermissionsPolicyFeature = "window-placement"
@@ -288,11 +358,16 @@ const (
 
 	// PagePermissionsPolicyBlockReasonIframeAttribute enum const
 	PagePermissionsPolicyBlockReasonIframeAttribute PagePermissionsPolicyBlockReason = "IframeAttribute"
+
+	// PagePermissionsPolicyBlockReasonInFencedFrameTree enum const
+	PagePermissionsPolicyBlockReasonInFencedFrameTree PagePermissionsPolicyBlockReason = "InFencedFrameTree"
+
+	// PagePermissionsPolicyBlockReasonInIsolatedApp enum const
+	PagePermissionsPolicyBlockReasonInIsolatedApp PagePermissionsPolicyBlockReason = "InIsolatedApp"
 )
 
 // PagePermissionsPolicyBlockLocator (experimental) ...
 type PagePermissionsPolicyBlockLocator struct {
-
 	// FrameID ...
 	FrameID PageFrameID `json:"frameId"`
 
@@ -302,7 +377,6 @@ type PagePermissionsPolicyBlockLocator struct {
 
 // PagePermissionsPolicyFeatureState (experimental) ...
 type PagePermissionsPolicyFeatureState struct {
-
 	// Feature ...
 	Feature PagePermissionsPolicyFeature `json:"feature"`
 
@@ -350,6 +424,9 @@ const (
 
 	// PageOriginTrialTokenStatusFeatureDisabledForUser enum const
 	PageOriginTrialTokenStatusFeatureDisabledForUser PageOriginTrialTokenStatus = "FeatureDisabledForUser"
+
+	// PageOriginTrialTokenStatusUnknownTrial enum const
+	PageOriginTrialTokenStatusUnknownTrial PageOriginTrialTokenStatus = "UnknownTrial"
 )
 
 // PageOriginTrialStatus (experimental) Status for an Origin Trial.
@@ -382,7 +459,6 @@ const (
 
 // PageOriginTrialToken (experimental) ...
 type PageOriginTrialToken struct {
-
 	// Origin ...
 	Origin string `json:"origin"`
 
@@ -404,7 +480,6 @@ type PageOriginTrialToken struct {
 
 // PageOriginTrialTokenWithStatus (experimental) ...
 type PageOriginTrialTokenWithStatus struct {
-
 	// RawTokenText ...
 	RawTokenText string `json:"rawTokenText"`
 
@@ -418,7 +493,6 @@ type PageOriginTrialTokenWithStatus struct {
 
 // PageOriginTrial (experimental) ...
 type PageOriginTrial struct {
-
 	// TrialName ...
 	TrialName string `json:"trialName"`
 
@@ -431,12 +505,11 @@ type PageOriginTrial struct {
 
 // PageFrame Information about the Frame on the page.
 type PageFrame struct {
-
 	// ID Frame unique identifier.
 	ID PageFrameID `json:"id"`
 
 	// ParentID (optional) Parent frame identifier.
-	ParentID string `json:"parentId,omitempty"`
+	ParentID PageFrameID `json:"parentId,omitempty"`
 
 	// LoaderID Identifier of the loader associated with this frame.
 	LoaderID NetworkLoaderID `json:"loaderId"`
@@ -476,14 +549,10 @@ type PageFrame struct {
 
 	// GatedAPIFeatures (experimental) Indicated which gated APIs / features are available.
 	GatedAPIFeatures []PageGatedAPIFeatures `json:"gatedAPIFeatures"`
-
-	// OriginTrials (experimental) (optional) Frame document's origin trials with at least one token present.
-	OriginTrials []*PageOriginTrial `json:"originTrials,omitempty"`
 }
 
 // PageFrameResource (experimental) Information about the Resource on the page.
 type PageFrameResource struct {
-
 	// URL Resource URL.
 	URL string `json:"url"`
 
@@ -497,7 +566,7 @@ type PageFrameResource struct {
 	LastModified TimeSinceEpoch `json:"lastModified,omitempty"`
 
 	// ContentSize (optional) Resource content size.
-	ContentSize float64 `json:"contentSize,omitempty"`
+	ContentSize *float64 `json:"contentSize,omitempty"`
 
 	// Failed (optional) True if the resource failed to load.
 	Failed bool `json:"failed,omitempty"`
@@ -508,7 +577,6 @@ type PageFrameResource struct {
 
 // PageFrameResourceTree (experimental) Information about the Frame hierarchy along with their cached resources.
 type PageFrameResourceTree struct {
-
 	// Frame Frame information for this tree item.
 	Frame *PageFrame `json:"frame"`
 
@@ -521,7 +589,6 @@ type PageFrameResourceTree struct {
 
 // PageFrameTree Information about the Frame hierarchy.
 type PageFrameTree struct {
-
 	// Frame Frame information for this tree item.
 	Frame *PageFrame `json:"frame"`
 
@@ -578,7 +645,6 @@ const (
 
 // PageNavigationEntry Navigation history entry.
 type PageNavigationEntry struct {
-
 	// ID Unique id of the navigation history entry.
 	ID int `json:"id"`
 
@@ -597,7 +663,6 @@ type PageNavigationEntry struct {
 
 // PageScreencastFrameMetadata (experimental) Screencast frame metadata.
 type PageScreencastFrameMetadata struct {
-
 	// OffsetTop Top offset in DIP.
 	OffsetTop float64 `json:"offsetTop"`
 
@@ -639,7 +704,6 @@ const (
 
 // PageAppManifestError Error while paring app manifest.
 type PageAppManifestError struct {
-
 	// Message Error message.
 	Message string `json:"message"`
 
@@ -655,14 +719,12 @@ type PageAppManifestError struct {
 
 // PageAppManifestParsedProperties (experimental) Parsed app manifest properties.
 type PageAppManifestParsedProperties struct {
-
 	// Scope Computed scope value
 	Scope string `json:"scope"`
 }
 
 // PageLayoutViewport Layout viewport position and dimensions.
 type PageLayoutViewport struct {
-
 	// PageX Horizontal offset relative to the document (CSS pixels).
 	PageX int `json:"pageX"`
 
@@ -678,7 +740,6 @@ type PageLayoutViewport struct {
 
 // PageVisualViewport Visual viewport position, dimensions, and scale.
 type PageVisualViewport struct {
-
 	// OffsetX Horizontal offset relative to the layout viewport (CSS pixels).
 	OffsetX float64 `json:"offsetX"`
 
@@ -701,12 +762,11 @@ type PageVisualViewport struct {
 	Scale float64 `json:"scale"`
 
 	// Zoom (optional) Page zoom factor (CSS to device independent pixels ratio).
-	Zoom float64 `json:"zoom,omitempty"`
+	Zoom *float64 `json:"zoom,omitempty"`
 }
 
 // PageViewport Viewport for capturing screenshot.
 type PageViewport struct {
-
 	// X X offset in device independent pixels (dip).
 	X float64 `json:"x"`
 
@@ -725,7 +785,6 @@ type PageViewport struct {
 
 // PageFontFamilies (experimental) Generic font families collection.
 type PageFontFamilies struct {
-
 	// Standard (optional) The standard font-family.
 	Standard string `json:"standard,omitempty"`
 
@@ -744,18 +803,26 @@ type PageFontFamilies struct {
 	// Fantasy (optional) The fantasy font-family.
 	Fantasy string `json:"fantasy,omitempty"`
 
-	// Pictograph (optional) The pictograph font-family.
-	Pictograph string `json:"pictograph,omitempty"`
+	// Math (optional) The math font-family.
+	Math string `json:"math,omitempty"`
+}
+
+// PageScriptFontFamilies (experimental) Font families collection for a script.
+type PageScriptFontFamilies struct {
+	// Script Name of the script which these font families are defined for.
+	Script string `json:"script"`
+
+	// FontFamilies Generic font families collection for the script.
+	FontFamilies *PageFontFamilies `json:"fontFamilies"`
 }
 
 // PageFontSizes (experimental) Default font sizes.
 type PageFontSizes struct {
-
 	// Standard (optional) Default standard font size.
-	Standard int `json:"standard,omitempty"`
+	Standard *int `json:"standard,omitempty"`
 
 	// Fixed (optional) Default fixed font size.
-	Fixed int `json:"fixed,omitempty"`
+	Fixed *int `json:"fixed,omitempty"`
 }
 
 // PageClientNavigationReason (experimental) ...
@@ -806,7 +873,6 @@ const (
 
 // PageInstallabilityErrorArgument (experimental) ...
 type PageInstallabilityErrorArgument struct {
-
 	// Name Argument name (e.g. name:'minimum-icon-size-in-pixels').
 	Name string `json:"name"`
 
@@ -816,7 +882,6 @@ type PageInstallabilityErrorArgument struct {
 
 // PageInstallabilityError (experimental) The installability error
 type PageInstallabilityError struct {
-
 	// ErrorID The error id (e.g. 'manifest-missing-suitable-icon').
 	ErrorID string `json:"errorId"`
 
@@ -855,7 +920,6 @@ const (
 
 // PageCompilationCacheParams (experimental) Per-script compilation cache parameters for `Page.produceCompilationCache`
 type PageCompilationCacheParams struct {
-
 	// URL The URL of the script to produce a compilation cache entry for.
 	URL string `json:"url"`
 
@@ -863,6 +927,23 @@ type PageCompilationCacheParams struct {
 	// (the actual compilation mode used is upon backend discretion).
 	Eager bool `json:"eager,omitempty"`
 }
+
+// PageAutoResponseMode (experimental) Enum of possible auto-reponse for permisison / prompt dialogs.
+type PageAutoResponseMode string
+
+const (
+	// PageAutoResponseModeNone enum const
+	PageAutoResponseModeNone PageAutoResponseMode = "none"
+
+	// PageAutoResponseModeAutoAccept enum const
+	PageAutoResponseModeAutoAccept PageAutoResponseMode = "autoAccept"
+
+	// PageAutoResponseModeAutoReject enum const
+	PageAutoResponseModeAutoReject PageAutoResponseMode = "autoReject"
+
+	// PageAutoResponseModeAutoOptOut enum const
+	PageAutoResponseModeAutoOptOut PageAutoResponseMode = "autoOptOut"
+)
 
 // PageNavigationType (experimental) The type of a frameNavigated event.
 type PageNavigationType string
@@ -879,8 +960,8 @@ const (
 type PageBackForwardCacheNotRestoredReason string
 
 const (
-	// PageBackForwardCacheNotRestoredReasonNotMainFrame enum const
-	PageBackForwardCacheNotRestoredReasonNotMainFrame PageBackForwardCacheNotRestoredReason = "NotMainFrame"
+	// PageBackForwardCacheNotRestoredReasonNotPrimaryMainFrame enum const
+	PageBackForwardCacheNotRestoredReasonNotPrimaryMainFrame PageBackForwardCacheNotRestoredReason = "NotPrimaryMainFrame"
 
 	// PageBackForwardCacheNotRestoredReasonBackForwardCacheDisabled enum const
 	PageBackForwardCacheNotRestoredReasonBackForwardCacheDisabled PageBackForwardCacheNotRestoredReason = "BackForwardCacheDisabled"
@@ -926,9 +1007,6 @@ const (
 
 	// PageBackForwardCacheNotRestoredReasonRendererProcessCrashed enum const
 	PageBackForwardCacheNotRestoredReasonRendererProcessCrashed PageBackForwardCacheNotRestoredReason = "RendererProcessCrashed"
-
-	// PageBackForwardCacheNotRestoredReasonGrantedMediaStreamAccess enum const
-	PageBackForwardCacheNotRestoredReasonGrantedMediaStreamAccess PageBackForwardCacheNotRestoredReason = "GrantedMediaStreamAccess"
 
 	// PageBackForwardCacheNotRestoredReasonSchedulerTrackedFeatureUsed enum const
 	PageBackForwardCacheNotRestoredReasonSchedulerTrackedFeatureUsed PageBackForwardCacheNotRestoredReason = "SchedulerTrackedFeatureUsed"
@@ -1008,8 +1086,8 @@ const (
 	// PageBackForwardCacheNotRestoredReasonBackForwardCacheDisabledForDelegate enum const
 	PageBackForwardCacheNotRestoredReasonBackForwardCacheDisabledForDelegate PageBackForwardCacheNotRestoredReason = "BackForwardCacheDisabledForDelegate"
 
-	// PageBackForwardCacheNotRestoredReasonOptInUnloadHeaderNotPresent enum const
-	PageBackForwardCacheNotRestoredReasonOptInUnloadHeaderNotPresent PageBackForwardCacheNotRestoredReason = "OptInUnloadHeaderNotPresent"
+	// PageBackForwardCacheNotRestoredReasonUnloadHandlerExistsInMainFrame enum const
+	PageBackForwardCacheNotRestoredReasonUnloadHandlerExistsInMainFrame PageBackForwardCacheNotRestoredReason = "UnloadHandlerExistsInMainFrame"
 
 	// PageBackForwardCacheNotRestoredReasonUnloadHandlerExistsInSubFrame enum const
 	PageBackForwardCacheNotRestoredReasonUnloadHandlerExistsInSubFrame PageBackForwardCacheNotRestoredReason = "UnloadHandlerExistsInSubFrame"
@@ -1026,8 +1104,26 @@ const (
 	// PageBackForwardCacheNotRestoredReasonCacheControlNoStoreHTTPOnlyCookieModified enum const
 	PageBackForwardCacheNotRestoredReasonCacheControlNoStoreHTTPOnlyCookieModified PageBackForwardCacheNotRestoredReason = "CacheControlNoStoreHTTPOnlyCookieModified"
 
+	// PageBackForwardCacheNotRestoredReasonNoResponseHead enum const
+	PageBackForwardCacheNotRestoredReasonNoResponseHead PageBackForwardCacheNotRestoredReason = "NoResponseHead"
+
+	// PageBackForwardCacheNotRestoredReasonUnknown enum const
+	PageBackForwardCacheNotRestoredReasonUnknown PageBackForwardCacheNotRestoredReason = "Unknown"
+
+	// PageBackForwardCacheNotRestoredReasonActivationNavigationsDisallowedForBug1234857 enum const
+	PageBackForwardCacheNotRestoredReasonActivationNavigationsDisallowedForBug1234857 PageBackForwardCacheNotRestoredReason = "ActivationNavigationsDisallowedForBug1234857"
+
+	// PageBackForwardCacheNotRestoredReasonErrorDocument enum const
+	PageBackForwardCacheNotRestoredReasonErrorDocument PageBackForwardCacheNotRestoredReason = "ErrorDocument"
+
+	// PageBackForwardCacheNotRestoredReasonFencedFramesEmbedder enum const
+	PageBackForwardCacheNotRestoredReasonFencedFramesEmbedder PageBackForwardCacheNotRestoredReason = "FencedFramesEmbedder"
+
 	// PageBackForwardCacheNotRestoredReasonWebSocket enum const
 	PageBackForwardCacheNotRestoredReasonWebSocket PageBackForwardCacheNotRestoredReason = "WebSocket"
+
+	// PageBackForwardCacheNotRestoredReasonWebTransport enum const
+	PageBackForwardCacheNotRestoredReasonWebTransport PageBackForwardCacheNotRestoredReason = "WebTransport"
 
 	// PageBackForwardCacheNotRestoredReasonWebRTC enum const
 	PageBackForwardCacheNotRestoredReasonWebRTC PageBackForwardCacheNotRestoredReason = "WebRTC"
@@ -1058,9 +1154,6 @@ const (
 
 	// PageBackForwardCacheNotRestoredReasonOutstandingIndexedDBTransaction enum const
 	PageBackForwardCacheNotRestoredReasonOutstandingIndexedDBTransaction PageBackForwardCacheNotRestoredReason = "OutstandingIndexedDBTransaction"
-
-	// PageBackForwardCacheNotRestoredReasonRequestedNotificationsPermission enum const
-	PageBackForwardCacheNotRestoredReasonRequestedNotificationsPermission PageBackForwardCacheNotRestoredReason = "RequestedNotificationsPermission"
 
 	// PageBackForwardCacheNotRestoredReasonRequestedMIDIPermission enum const
 	PageBackForwardCacheNotRestoredReasonRequestedMIDIPermission PageBackForwardCacheNotRestoredReason = "RequestedMIDIPermission"
@@ -1104,9 +1197,6 @@ const (
 	// PageBackForwardCacheNotRestoredReasonWebNfc enum const
 	PageBackForwardCacheNotRestoredReasonWebNfc PageBackForwardCacheNotRestoredReason = "WebNfc"
 
-	// PageBackForwardCacheNotRestoredReasonWebFileSystem enum const
-	PageBackForwardCacheNotRestoredReasonWebFileSystem PageBackForwardCacheNotRestoredReason = "WebFileSystem"
-
 	// PageBackForwardCacheNotRestoredReasonOutstandingNetworkRequestFetch enum const
 	PageBackForwardCacheNotRestoredReasonOutstandingNetworkRequestFetch PageBackForwardCacheNotRestoredReason = "OutstandingNetworkRequestFetch"
 
@@ -1149,17 +1239,98 @@ const (
 	// PageBackForwardCacheNotRestoredReasonOutstandingNetworkRequestDirectSocket enum const
 	PageBackForwardCacheNotRestoredReasonOutstandingNetworkRequestDirectSocket PageBackForwardCacheNotRestoredReason = "OutstandingNetworkRequestDirectSocket"
 
-	// PageBackForwardCacheNotRestoredReasonIsolatedWorldScript enum const
-	PageBackForwardCacheNotRestoredReasonIsolatedWorldScript PageBackForwardCacheNotRestoredReason = "IsolatedWorldScript"
+	// PageBackForwardCacheNotRestoredReasonInjectedJavascript enum const
+	PageBackForwardCacheNotRestoredReasonInjectedJavascript PageBackForwardCacheNotRestoredReason = "InjectedJavascript"
 
 	// PageBackForwardCacheNotRestoredReasonInjectedStyleSheet enum const
 	PageBackForwardCacheNotRestoredReasonInjectedStyleSheet PageBackForwardCacheNotRestoredReason = "InjectedStyleSheet"
 
-	// PageBackForwardCacheNotRestoredReasonMediaSessionImplOnServiceCreated enum const
-	PageBackForwardCacheNotRestoredReasonMediaSessionImplOnServiceCreated PageBackForwardCacheNotRestoredReason = "MediaSessionImplOnServiceCreated"
+	// PageBackForwardCacheNotRestoredReasonKeepaliveRequest enum const
+	PageBackForwardCacheNotRestoredReasonKeepaliveRequest PageBackForwardCacheNotRestoredReason = "KeepaliveRequest"
 
-	// PageBackForwardCacheNotRestoredReasonUnknown enum const
-	PageBackForwardCacheNotRestoredReasonUnknown PageBackForwardCacheNotRestoredReason = "Unknown"
+	// PageBackForwardCacheNotRestoredReasonIndexedDBEvent enum const
+	PageBackForwardCacheNotRestoredReasonIndexedDBEvent PageBackForwardCacheNotRestoredReason = "IndexedDBEvent"
+
+	// PageBackForwardCacheNotRestoredReasonDummy enum const
+	PageBackForwardCacheNotRestoredReasonDummy PageBackForwardCacheNotRestoredReason = "Dummy"
+
+	// PageBackForwardCacheNotRestoredReasonAuthorizationHeader enum const
+	PageBackForwardCacheNotRestoredReasonAuthorizationHeader PageBackForwardCacheNotRestoredReason = "AuthorizationHeader"
+
+	// PageBackForwardCacheNotRestoredReasonContentSecurityHandler enum const
+	PageBackForwardCacheNotRestoredReasonContentSecurityHandler PageBackForwardCacheNotRestoredReason = "ContentSecurityHandler"
+
+	// PageBackForwardCacheNotRestoredReasonContentWebAuthenticationAPI enum const
+	PageBackForwardCacheNotRestoredReasonContentWebAuthenticationAPI PageBackForwardCacheNotRestoredReason = "ContentWebAuthenticationAPI"
+
+	// PageBackForwardCacheNotRestoredReasonContentFileChooser enum const
+	PageBackForwardCacheNotRestoredReasonContentFileChooser PageBackForwardCacheNotRestoredReason = "ContentFileChooser"
+
+	// PageBackForwardCacheNotRestoredReasonContentSerial enum const
+	PageBackForwardCacheNotRestoredReasonContentSerial PageBackForwardCacheNotRestoredReason = "ContentSerial"
+
+	// PageBackForwardCacheNotRestoredReasonContentFileSystemAccess enum const
+	PageBackForwardCacheNotRestoredReasonContentFileSystemAccess PageBackForwardCacheNotRestoredReason = "ContentFileSystemAccess"
+
+	// PageBackForwardCacheNotRestoredReasonContentMediaDevicesDispatcherHost enum const
+	PageBackForwardCacheNotRestoredReasonContentMediaDevicesDispatcherHost PageBackForwardCacheNotRestoredReason = "ContentMediaDevicesDispatcherHost"
+
+	// PageBackForwardCacheNotRestoredReasonContentWebBluetooth enum const
+	PageBackForwardCacheNotRestoredReasonContentWebBluetooth PageBackForwardCacheNotRestoredReason = "ContentWebBluetooth"
+
+	// PageBackForwardCacheNotRestoredReasonContentWebUSB enum const
+	PageBackForwardCacheNotRestoredReasonContentWebUSB PageBackForwardCacheNotRestoredReason = "ContentWebUSB"
+
+	// PageBackForwardCacheNotRestoredReasonContentMediaSessionService enum const
+	PageBackForwardCacheNotRestoredReasonContentMediaSessionService PageBackForwardCacheNotRestoredReason = "ContentMediaSessionService"
+
+	// PageBackForwardCacheNotRestoredReasonContentScreenReader enum const
+	PageBackForwardCacheNotRestoredReasonContentScreenReader PageBackForwardCacheNotRestoredReason = "ContentScreenReader"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderPopupBlockerTabHelper enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderPopupBlockerTabHelper PageBackForwardCacheNotRestoredReason = "EmbedderPopupBlockerTabHelper"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderSafeBrowsingTriggeredPopupBlocker enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderSafeBrowsingTriggeredPopupBlocker PageBackForwardCacheNotRestoredReason = "EmbedderSafeBrowsingTriggeredPopupBlocker"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderSafeBrowsingThreatDetails enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderSafeBrowsingThreatDetails PageBackForwardCacheNotRestoredReason = "EmbedderSafeBrowsingThreatDetails"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderAppBannerManager enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderAppBannerManager PageBackForwardCacheNotRestoredReason = "EmbedderAppBannerManager"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderDomDistillerViewerSource enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderDomDistillerViewerSource PageBackForwardCacheNotRestoredReason = "EmbedderDomDistillerViewerSource"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderDomDistillerSelfDeletingRequestDelegate enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderDomDistillerSelfDeletingRequestDelegate PageBackForwardCacheNotRestoredReason = "EmbedderDomDistillerSelfDeletingRequestDelegate"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderOomInterventionTabHelper enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderOomInterventionTabHelper PageBackForwardCacheNotRestoredReason = "EmbedderOomInterventionTabHelper"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderOfflinePage enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderOfflinePage PageBackForwardCacheNotRestoredReason = "EmbedderOfflinePage"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderChromePasswordManagerClientBindCredentialManager enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderChromePasswordManagerClientBindCredentialManager PageBackForwardCacheNotRestoredReason = "EmbedderChromePasswordManagerClientBindCredentialManager"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderPermissionRequestManager enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderPermissionRequestManager PageBackForwardCacheNotRestoredReason = "EmbedderPermissionRequestManager"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderModalDialog enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderModalDialog PageBackForwardCacheNotRestoredReason = "EmbedderModalDialog"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderExtensions enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderExtensions PageBackForwardCacheNotRestoredReason = "EmbedderExtensions"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderExtensionMessaging enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderExtensionMessaging PageBackForwardCacheNotRestoredReason = "EmbedderExtensionMessaging"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderExtensionMessagingForOpenPort enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderExtensionMessagingForOpenPort PageBackForwardCacheNotRestoredReason = "EmbedderExtensionMessagingForOpenPort"
+
+	// PageBackForwardCacheNotRestoredReasonEmbedderExtensionSentMessageToCachedFrame enum const
+	PageBackForwardCacheNotRestoredReasonEmbedderExtensionSentMessageToCachedFrame PageBackForwardCacheNotRestoredReason = "EmbedderExtensionSentMessageToCachedFrame"
 )
 
 // PageBackForwardCacheNotRestoredReasonType (experimental) Types of not restored reasons for back-forward cache.
@@ -1178,17 +1349,32 @@ const (
 
 // PageBackForwardCacheNotRestoredExplanation (experimental) ...
 type PageBackForwardCacheNotRestoredExplanation struct {
-
 	// Type Type of the reason
 	Type PageBackForwardCacheNotRestoredReasonType `json:"type"`
 
 	// Reason Not restored reason
 	Reason PageBackForwardCacheNotRestoredReason `json:"reason"`
+
+	// Context (optional) Context associated with the reason. The meaning of this context is
+	// dependent on the reason:
+	// - EmbedderExtensionSentMessageToCachedFrame: the extension ID.
+	Context string `json:"context,omitempty"`
+}
+
+// PageBackForwardCacheNotRestoredExplanationTree (experimental) ...
+type PageBackForwardCacheNotRestoredExplanationTree struct {
+	// URL URL of each frame
+	URL string `json:"url"`
+
+	// Explanations Not restored reasons of each frame
+	Explanations []*PageBackForwardCacheNotRestoredExplanation `json:"explanations"`
+
+	// Children Array of children frame
+	Children []*PageBackForwardCacheNotRestoredExplanationTree `json:"children"`
 }
 
 // PageAddScriptToEvaluateOnLoad (deprecated) (experimental) Deprecated, please use addScriptToEvaluateOnNewDocument instead.
 type PageAddScriptToEvaluateOnLoad struct {
-
 	// ScriptSource ...
 	ScriptSource string `json:"scriptSource"`
 }
@@ -1202,16 +1388,14 @@ func (m PageAddScriptToEvaluateOnLoad) Call(c Client) (*PageAddScriptToEvaluateO
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageAddScriptToEvaluateOnLoadResult (deprecated) (experimental) Deprecated, please use addScriptToEvaluateOnNewDocument instead.
+// PageAddScriptToEvaluateOnLoadResult (deprecated) (experimental) ...
 type PageAddScriptToEvaluateOnLoadResult struct {
-
 	// Identifier Identifier of the added script.
 	Identifier PageScriptIdentifier `json:"identifier"`
 }
 
 // PageAddScriptToEvaluateOnNewDocument Evaluates given script in every frame upon creation (before loading frame's scripts).
 type PageAddScriptToEvaluateOnNewDocument struct {
-
 	// Source ...
 	Source string `json:"source"`
 
@@ -1236,16 +1420,14 @@ func (m PageAddScriptToEvaluateOnNewDocument) Call(c Client) (*PageAddScriptToEv
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageAddScriptToEvaluateOnNewDocumentResult Evaluates given script in every frame upon creation (before loading frame's scripts).
+// PageAddScriptToEvaluateOnNewDocumentResult ...
 type PageAddScriptToEvaluateOnNewDocumentResult struct {
-
 	// Identifier Identifier of the added script.
 	Identifier PageScriptIdentifier `json:"identifier"`
 }
 
 // PageBringToFront Brings page to front (activates tab).
-type PageBringToFront struct {
-}
+type PageBringToFront struct{}
 
 // ProtoReq name
 func (m PageBringToFront) ProtoReq() string { return "Page.bringToFront" }
@@ -1271,12 +1453,11 @@ const (
 
 // PageCaptureScreenshot Capture page screenshot.
 type PageCaptureScreenshot struct {
-
 	// Format (optional) Image compression format (defaults to png).
 	Format PageCaptureScreenshotFormat `json:"format,omitempty"`
 
 	// Quality (optional) Compression quality from range [0..100] (jpeg only).
-	Quality int `json:"quality,omitempty"`
+	Quality *int `json:"quality,omitempty"`
 
 	// Clip (optional) Capture the screenshot of a given region only.
 	Clip *PageViewport `json:"clip,omitempty"`
@@ -1286,6 +1467,9 @@ type PageCaptureScreenshot struct {
 
 	// CaptureBeyondViewport (experimental) (optional) Capture the screenshot beyond the viewport. Defaults to false.
 	CaptureBeyondViewport bool `json:"captureBeyondViewport,omitempty"`
+
+	// OptimizeForSpeed (experimental) (optional) Optimize image encoding for speed, not for resulting size (defaults to false)
+	OptimizeForSpeed bool `json:"optimizeForSpeed,omitempty"`
 }
 
 // ProtoReq name
@@ -1297,9 +1481,8 @@ func (m PageCaptureScreenshot) Call(c Client) (*PageCaptureScreenshotResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageCaptureScreenshotResult Capture page screenshot.
+// PageCaptureScreenshotResult ...
 type PageCaptureScreenshotResult struct {
-
 	// Data Base64-encoded image data.
 	Data []byte `json:"data"`
 }
@@ -1315,7 +1498,6 @@ const (
 // PageCaptureSnapshot (experimental) Returns a snapshot of the page as a string. For MHTML format, the serialization includes
 // iframes, shadow DOM, external resources, and element-inline styles.
 type PageCaptureSnapshot struct {
-
 	// Format (optional) Format (defaults to mhtml).
 	Format PageCaptureSnapshotFormat `json:"format,omitempty"`
 }
@@ -1329,17 +1511,14 @@ func (m PageCaptureSnapshot) Call(c Client) (*PageCaptureSnapshotResult, error) 
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageCaptureSnapshotResult (experimental) Returns a snapshot of the page as a string. For MHTML format, the serialization includes
-// iframes, shadow DOM, external resources, and element-inline styles.
+// PageCaptureSnapshotResult (experimental) ...
 type PageCaptureSnapshotResult struct {
-
 	// Data Serialized page data.
 	Data string `json:"data"`
 }
 
 // PageClearDeviceMetricsOverride (deprecated) (experimental) Clears the overridden device metrics.
-type PageClearDeviceMetricsOverride struct {
-}
+type PageClearDeviceMetricsOverride struct{}
 
 // ProtoReq name
 func (m PageClearDeviceMetricsOverride) ProtoReq() string { return "Page.clearDeviceMetricsOverride" }
@@ -1350,8 +1529,7 @@ func (m PageClearDeviceMetricsOverride) Call(c Client) error {
 }
 
 // PageClearDeviceOrientationOverride (deprecated) (experimental) Clears the overridden Device Orientation.
-type PageClearDeviceOrientationOverride struct {
-}
+type PageClearDeviceOrientationOverride struct{}
 
 // ProtoReq name
 func (m PageClearDeviceOrientationOverride) ProtoReq() string {
@@ -1364,8 +1542,7 @@ func (m PageClearDeviceOrientationOverride) Call(c Client) error {
 }
 
 // PageClearGeolocationOverride (deprecated) Clears the overridden Geolocation Position and Error.
-type PageClearGeolocationOverride struct {
-}
+type PageClearGeolocationOverride struct{}
 
 // ProtoReq name
 func (m PageClearGeolocationOverride) ProtoReq() string { return "Page.clearGeolocationOverride" }
@@ -1377,7 +1554,6 @@ func (m PageClearGeolocationOverride) Call(c Client) error {
 
 // PageCreateIsolatedWorld Creates an isolated world for the given frame.
 type PageCreateIsolatedWorld struct {
-
 	// FrameID Id of the frame in which the isolated world should be created.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -1398,16 +1574,14 @@ func (m PageCreateIsolatedWorld) Call(c Client) (*PageCreateIsolatedWorldResult,
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageCreateIsolatedWorldResult Creates an isolated world for the given frame.
+// PageCreateIsolatedWorldResult ...
 type PageCreateIsolatedWorldResult struct {
-
 	// ExecutionContextID Execution context of the isolated world.
 	ExecutionContextID RuntimeExecutionContextID `json:"executionContextId"`
 }
 
 // PageDeleteCookie (deprecated) (experimental) Deletes browser cookie with given name, domain and path.
 type PageDeleteCookie struct {
-
 	// CookieName Name of the cookie to remove.
 	CookieName string `json:"cookieName"`
 
@@ -1424,8 +1598,7 @@ func (m PageDeleteCookie) Call(c Client) error {
 }
 
 // PageDisable Disables page domain notifications.
-type PageDisable struct {
-}
+type PageDisable struct{}
 
 // ProtoReq name
 func (m PageDisable) ProtoReq() string { return "Page.disable" }
@@ -1436,8 +1609,7 @@ func (m PageDisable) Call(c Client) error {
 }
 
 // PageEnable Enables page domain notifications.
-type PageEnable struct {
-}
+type PageEnable struct{}
 
 // ProtoReq name
 func (m PageEnable) ProtoReq() string { return "Page.enable" }
@@ -1448,8 +1620,7 @@ func (m PageEnable) Call(c Client) error {
 }
 
 // PageGetAppManifest ...
-type PageGetAppManifest struct {
-}
+type PageGetAppManifest struct{}
 
 // ProtoReq name
 func (m PageGetAppManifest) ProtoReq() string { return "Page.getAppManifest" }
@@ -1462,7 +1633,6 @@ func (m PageGetAppManifest) Call(c Client) (*PageGetAppManifestResult, error) {
 
 // PageGetAppManifestResult ...
 type PageGetAppManifestResult struct {
-
 	// URL Manifest location.
 	URL string `json:"url"`
 
@@ -1477,8 +1647,7 @@ type PageGetAppManifestResult struct {
 }
 
 // PageGetInstallabilityErrors (experimental) ...
-type PageGetInstallabilityErrors struct {
-}
+type PageGetInstallabilityErrors struct{}
 
 // ProtoReq name
 func (m PageGetInstallabilityErrors) ProtoReq() string { return "Page.getInstallabilityErrors" }
@@ -1491,14 +1660,12 @@ func (m PageGetInstallabilityErrors) Call(c Client) (*PageGetInstallabilityError
 
 // PageGetInstallabilityErrorsResult (experimental) ...
 type PageGetInstallabilityErrorsResult struct {
-
 	// InstallabilityErrors ...
 	InstallabilityErrors []*PageInstallabilityError `json:"installabilityErrors"`
 }
 
-// PageGetManifestIcons (experimental) ...
-type PageGetManifestIcons struct {
-}
+// PageGetManifestIcons (deprecated) (experimental) Deprecated because it's not guaranteed that the returned icon is in fact the one used for PWA installation.
+type PageGetManifestIcons struct{}
 
 // ProtoReq name
 func (m PageGetManifestIcons) ProtoReq() string { return "Page.getManifestIcons" }
@@ -1509,17 +1676,60 @@ func (m PageGetManifestIcons) Call(c Client) (*PageGetManifestIconsResult, error
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetManifestIconsResult (experimental) ...
+// PageGetManifestIconsResult (deprecated) (experimental) ...
 type PageGetManifestIconsResult struct {
-
 	// PrimaryIcon (optional) ...
 	PrimaryIcon []byte `json:"primaryIcon,omitempty"`
 }
 
-// PageGetCookies (deprecated) (experimental) Returns all browser cookies. Depending on the backend support, will return detailed cookie
-// information in the `cookies` field.
-type PageGetCookies struct {
+// PageGetAppID (experimental) Returns the unique (PWA) app id.
+// Only returns values if the feature flag 'WebAppEnableManifestId' is enabled
+type PageGetAppID struct{}
+
+// ProtoReq name
+func (m PageGetAppID) ProtoReq() string { return "Page.getAppId" }
+
+// Call the request
+func (m PageGetAppID) Call(c Client) (*PageGetAppIDResult, error) {
+	var res PageGetAppIDResult
+	return &res, call(m.ProtoReq(), m, &res, c)
 }
+
+// PageGetAppIDResult (experimental) ...
+type PageGetAppIDResult struct {
+	// AppID (optional) App id, either from manifest's id attribute or computed from start_url
+	AppID string `json:"appId,omitempty"`
+
+	// RecommendedID (optional) Recommendation for manifest's id attribute to match current id computed from start_url
+	RecommendedID string `json:"recommendedId,omitempty"`
+}
+
+// PageGetAdScriptID (experimental) ...
+type PageGetAdScriptID struct {
+	// FrameID ...
+	FrameID PageFrameID `json:"frameId"`
+}
+
+// ProtoReq name
+func (m PageGetAdScriptID) ProtoReq() string { return "Page.getAdScriptId" }
+
+// Call the request
+func (m PageGetAdScriptID) Call(c Client) (*PageGetAdScriptIDResult, error) {
+	var res PageGetAdScriptIDResult
+	return &res, call(m.ProtoReq(), m, &res, c)
+}
+
+// PageGetAdScriptIDResult (experimental) ...
+type PageGetAdScriptIDResult struct {
+	// AdScriptID (optional) Identifies the bottom-most script which caused the frame to be labelled
+	// as an ad. Only sent if frame is labelled as an ad and id is available.
+	AdScriptID *PageAdScriptID `json:"adScriptId,omitempty"`
+}
+
+// PageGetCookies (deprecated) (experimental) Returns all browser cookies for the page and all of its subframes. Depending
+// on the backend support, will return detailed cookie information in the
+// `cookies` field.
+type PageGetCookies struct{}
 
 // ProtoReq name
 func (m PageGetCookies) ProtoReq() string { return "Page.getCookies" }
@@ -1530,17 +1740,14 @@ func (m PageGetCookies) Call(c Client) (*PageGetCookiesResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetCookiesResult (deprecated) (experimental) Returns all browser cookies. Depending on the backend support, will return detailed cookie
-// information in the `cookies` field.
+// PageGetCookiesResult (deprecated) (experimental) ...
 type PageGetCookiesResult struct {
-
 	// Cookies Array of cookie objects.
 	Cookies []*NetworkCookie `json:"cookies"`
 }
 
 // PageGetFrameTree Returns present frame tree structure.
-type PageGetFrameTree struct {
-}
+type PageGetFrameTree struct{}
 
 // ProtoReq name
 func (m PageGetFrameTree) ProtoReq() string { return "Page.getFrameTree" }
@@ -1551,16 +1758,14 @@ func (m PageGetFrameTree) Call(c Client) (*PageGetFrameTreeResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetFrameTreeResult Returns present frame tree structure.
+// PageGetFrameTreeResult ...
 type PageGetFrameTreeResult struct {
-
 	// FrameTree Present frame tree structure.
 	FrameTree *PageFrameTree `json:"frameTree"`
 }
 
 // PageGetLayoutMetrics Returns metrics relating to the layouting of the page, such as viewport bounds/scale.
-type PageGetLayoutMetrics struct {
-}
+type PageGetLayoutMetrics struct{}
 
 // ProtoReq name
 func (m PageGetLayoutMetrics) ProtoReq() string { return "Page.getLayoutMetrics" }
@@ -1571,16 +1776,15 @@ func (m PageGetLayoutMetrics) Call(c Client) (*PageGetLayoutMetricsResult, error
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetLayoutMetricsResult Returns metrics relating to the layouting of the page, such as viewport bounds/scale.
+// PageGetLayoutMetricsResult ...
 type PageGetLayoutMetricsResult struct {
-
-	// LayoutViewport (deprecated) Deprecated metrics relating to the layout viewport. Can be in DP or in CSS pixels depending on the `enable-use-zoom-for-dsf` flag. Use `cssLayoutViewport` instead.
+	// LayoutViewport (deprecated) Deprecated metrics relating to the layout viewport. Is in device pixels. Use `cssLayoutViewport` instead.
 	LayoutViewport *PageLayoutViewport `json:"layoutViewport"`
 
-	// VisualViewport (deprecated) Deprecated metrics relating to the visual viewport. Can be in DP or in CSS pixels depending on the `enable-use-zoom-for-dsf` flag. Use `cssVisualViewport` instead.
+	// VisualViewport (deprecated) Deprecated metrics relating to the visual viewport. Is in device pixels. Use `cssVisualViewport` instead.
 	VisualViewport *PageVisualViewport `json:"visualViewport"`
 
-	// ContentSize (deprecated) Deprecated size of scrollable area. Can be in DP or in CSS pixels depending on the `enable-use-zoom-for-dsf` flag. Use `cssContentSize` instead.
+	// ContentSize (deprecated) Deprecated size of scrollable area. Is in DP. Use `cssContentSize` instead.
 	ContentSize *DOMRect `json:"contentSize"`
 
 	// CSSLayoutViewport Metrics relating to the layout viewport in CSS pixels.
@@ -1594,8 +1798,7 @@ type PageGetLayoutMetricsResult struct {
 }
 
 // PageGetNavigationHistory Returns navigation history for the current page.
-type PageGetNavigationHistory struct {
-}
+type PageGetNavigationHistory struct{}
 
 // ProtoReq name
 func (m PageGetNavigationHistory) ProtoReq() string { return "Page.getNavigationHistory" }
@@ -1606,9 +1809,8 @@ func (m PageGetNavigationHistory) Call(c Client) (*PageGetNavigationHistoryResul
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetNavigationHistoryResult Returns navigation history for the current page.
+// PageGetNavigationHistoryResult ...
 type PageGetNavigationHistoryResult struct {
-
 	// CurrentIndex Index of the current navigation history entry.
 	CurrentIndex int `json:"currentIndex"`
 
@@ -1617,8 +1819,7 @@ type PageGetNavigationHistoryResult struct {
 }
 
 // PageResetNavigationHistory Resets navigation history for the current page.
-type PageResetNavigationHistory struct {
-}
+type PageResetNavigationHistory struct{}
 
 // ProtoReq name
 func (m PageResetNavigationHistory) ProtoReq() string { return "Page.resetNavigationHistory" }
@@ -1630,7 +1831,6 @@ func (m PageResetNavigationHistory) Call(c Client) error {
 
 // PageGetResourceContent (experimental) Returns content of the given resource.
 type PageGetResourceContent struct {
-
 	// FrameID Frame id to get resource for.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -1647,9 +1847,8 @@ func (m PageGetResourceContent) Call(c Client) (*PageGetResourceContentResult, e
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetResourceContentResult (experimental) Returns content of the given resource.
+// PageGetResourceContentResult (experimental) ...
 type PageGetResourceContentResult struct {
-
 	// Content Resource content.
 	Content string `json:"content"`
 
@@ -1658,8 +1857,7 @@ type PageGetResourceContentResult struct {
 }
 
 // PageGetResourceTree (experimental) Returns present frame / resource tree structure.
-type PageGetResourceTree struct {
-}
+type PageGetResourceTree struct{}
 
 // ProtoReq name
 func (m PageGetResourceTree) ProtoReq() string { return "Page.getResourceTree" }
@@ -1670,16 +1868,14 @@ func (m PageGetResourceTree) Call(c Client) (*PageGetResourceTreeResult, error) 
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetResourceTreeResult (experimental) Returns present frame / resource tree structure.
+// PageGetResourceTreeResult (experimental) ...
 type PageGetResourceTreeResult struct {
-
 	// FrameTree Present frame / resource tree structure.
 	FrameTree *PageFrameResourceTree `json:"frameTree"`
 }
 
 // PageHandleJavaScriptDialog Accepts or dismisses a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload).
 type PageHandleJavaScriptDialog struct {
-
 	// Accept Whether to accept or dismiss the dialog.
 	Accept bool `json:"accept"`
 
@@ -1698,7 +1894,6 @@ func (m PageHandleJavaScriptDialog) Call(c Client) error {
 
 // PageNavigate Navigates current page to the given URL.
 type PageNavigate struct {
-
 	// URL URL to navigate the page to.
 	URL string `json:"url"`
 
@@ -1724,13 +1919,13 @@ func (m PageNavigate) Call(c Client) (*PageNavigateResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageNavigateResult Navigates current page to the given URL.
+// PageNavigateResult ...
 type PageNavigateResult struct {
-
 	// FrameID Frame id that has navigated (or failed to navigate)
 	FrameID PageFrameID `json:"frameId"`
 
-	// LoaderID (optional) Loader identifier.
+	// LoaderID (optional) Loader identifier. This is omitted in case of same-document navigation,
+	// as the previously committed loaderId would not change.
 	LoaderID NetworkLoaderID `json:"loaderId,omitempty"`
 
 	// ErrorText (optional) User friendly error message, present if and only if navigation has failed.
@@ -1739,7 +1934,6 @@ type PageNavigateResult struct {
 
 // PageNavigateToHistoryEntry Navigates current page to the given history entry.
 type PageNavigateToHistoryEntry struct {
-
 	// EntryID Unique id of the entry to navigate to.
 	EntryID int `json:"entryId"`
 }
@@ -1765,7 +1959,6 @@ const (
 
 // PagePrintToPDF Print page as PDF.
 type PagePrintToPDF struct {
-
 	// Landscape (optional) Paper orientation. Defaults to false.
 	Landscape bool `json:"landscape,omitempty"`
 
@@ -1776,33 +1969,35 @@ type PagePrintToPDF struct {
 	PrintBackground bool `json:"printBackground,omitempty"`
 
 	// Scale (optional) Scale of the webpage rendering. Defaults to 1.
-	Scale float64 `json:"scale,omitempty"`
+	Scale *float64 `json:"scale,omitempty"`
 
 	// PaperWidth (optional) Paper width in inches. Defaults to 8.5 inches.
-	PaperWidth float64 `json:"paperWidth,omitempty"`
+	PaperWidth *float64 `json:"paperWidth,omitempty"`
 
 	// PaperHeight (optional) Paper height in inches. Defaults to 11 inches.
-	PaperHeight float64 `json:"paperHeight,omitempty"`
+	PaperHeight *float64 `json:"paperHeight,omitempty"`
 
 	// MarginTop (optional) Top margin in inches. Defaults to 1cm (~0.4 inches).
-	MarginTop float64 `json:"marginTop,omitempty"`
+	MarginTop *float64 `json:"marginTop,omitempty"`
 
 	// MarginBottom (optional) Bottom margin in inches. Defaults to 1cm (~0.4 inches).
-	MarginBottom float64 `json:"marginBottom,omitempty"`
+	MarginBottom *float64 `json:"marginBottom,omitempty"`
 
 	// MarginLeft (optional) Left margin in inches. Defaults to 1cm (~0.4 inches).
-	MarginLeft float64 `json:"marginLeft,omitempty"`
+	MarginLeft *float64 `json:"marginLeft,omitempty"`
 
 	// MarginRight (optional) Right margin in inches. Defaults to 1cm (~0.4 inches).
-	MarginRight float64 `json:"marginRight,omitempty"`
+	MarginRight *float64 `json:"marginRight,omitempty"`
 
-	// PageRanges (optional) Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means
-	// print all pages.
+	// PageRanges (optional) Paper ranges to print, one based, e.g., '1-5, 8, 11-13'. Pages are
+	// printed in the document order, not in the order specified, and no
+	// more than once.
+	// Defaults to empty string, which implies the entire document is printed.
+	// The page numbers are quietly capped to actual page count of the
+	// document, and ranges beyond the end of the document are ignored.
+	// If this results in no pages to print, an error is reported.
+	// It is an error to specify a range with start greater than end.
 	PageRanges string `json:"pageRanges,omitempty"`
-
-	// IgnoreInvalidPageRanges (optional) Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'.
-	// Defaults to false.
-	IgnoreInvalidPageRanges bool `json:"ignoreInvalidPageRanges,omitempty"`
 
 	// HeaderTemplate (optional) HTML template for the print header. Should be valid HTML markup with following
 	// classes used to inject printing values into them:
@@ -1835,9 +2030,8 @@ func (m PagePrintToPDF) Call(c Client) (*PagePrintToPDFResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PagePrintToPDFResult Print page as PDF.
+// PagePrintToPDFResult ...
 type PagePrintToPDFResult struct {
-
 	// Data Base64-encoded pdf data. Empty if |returnAsStream| is specified.
 	Data []byte `json:"data"`
 
@@ -1847,7 +2041,6 @@ type PagePrintToPDFResult struct {
 
 // PageReload Reloads given page optionally ignoring the cache.
 type PageReload struct {
-
 	// IgnoreCache (optional) If true, browser cache is ignored (as if the user pressed Shift+refresh).
 	IgnoreCache bool `json:"ignoreCache,omitempty"`
 
@@ -1866,7 +2059,6 @@ func (m PageReload) Call(c Client) error {
 
 // PageRemoveScriptToEvaluateOnLoad (deprecated) (experimental) Deprecated, please use removeScriptToEvaluateOnNewDocument instead.
 type PageRemoveScriptToEvaluateOnLoad struct {
-
 	// Identifier ...
 	Identifier PageScriptIdentifier `json:"identifier"`
 }
@@ -1883,7 +2075,6 @@ func (m PageRemoveScriptToEvaluateOnLoad) Call(c Client) error {
 
 // PageRemoveScriptToEvaluateOnNewDocument Removes given script from the list.
 type PageRemoveScriptToEvaluateOnNewDocument struct {
-
 	// Identifier ...
 	Identifier PageScriptIdentifier `json:"identifier"`
 }
@@ -1900,7 +2091,6 @@ func (m PageRemoveScriptToEvaluateOnNewDocument) Call(c Client) error {
 
 // PageScreencastFrameAck (experimental) Acknowledges that a screencast frame has been received by the frontend.
 type PageScreencastFrameAck struct {
-
 	// SessionID Frame number.
 	SessionID int `json:"sessionId"`
 }
@@ -1915,7 +2105,6 @@ func (m PageScreencastFrameAck) Call(c Client) error {
 
 // PageSearchInResource (experimental) Searches for given string in resource content.
 type PageSearchInResource struct {
-
 	// FrameID Frame id for resource to search in.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -1941,16 +2130,14 @@ func (m PageSearchInResource) Call(c Client) (*PageSearchInResourceResult, error
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageSearchInResourceResult (experimental) Searches for given string in resource content.
+// PageSearchInResourceResult (experimental) ...
 type PageSearchInResourceResult struct {
-
 	// Result List of search matches.
 	Result []*DebuggerSearchMatch `json:"result"`
 }
 
 // PageSetAdBlockingEnabled (experimental) Enable Chrome's experimental ad filter on all sites.
 type PageSetAdBlockingEnabled struct {
-
 	// Enabled Whether to block ads.
 	Enabled bool `json:"enabled"`
 }
@@ -1965,7 +2152,6 @@ func (m PageSetAdBlockingEnabled) Call(c Client) error {
 
 // PageSetBypassCSP (experimental) Enable page Content Security Policy by-passing.
 type PageSetBypassCSP struct {
-
 	// Enabled Whether to bypass page CSP.
 	Enabled bool `json:"enabled"`
 }
@@ -1980,7 +2166,6 @@ func (m PageSetBypassCSP) Call(c Client) error {
 
 // PageGetPermissionsPolicyState (experimental) Get Permissions Policy state on given frame.
 type PageGetPermissionsPolicyState struct {
-
 	// FrameID ...
 	FrameID PageFrameID `json:"frameId"`
 }
@@ -1994,18 +2179,37 @@ func (m PageGetPermissionsPolicyState) Call(c Client) (*PageGetPermissionsPolicy
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// PageGetPermissionsPolicyStateResult (experimental) Get Permissions Policy state on given frame.
+// PageGetPermissionsPolicyStateResult (experimental) ...
 type PageGetPermissionsPolicyStateResult struct {
-
 	// States ...
 	States []*PagePermissionsPolicyFeatureState `json:"states"`
+}
+
+// PageGetOriginTrials (experimental) Get Origin Trials on given frame.
+type PageGetOriginTrials struct {
+	// FrameID ...
+	FrameID PageFrameID `json:"frameId"`
+}
+
+// ProtoReq name
+func (m PageGetOriginTrials) ProtoReq() string { return "Page.getOriginTrials" }
+
+// Call the request
+func (m PageGetOriginTrials) Call(c Client) (*PageGetOriginTrialsResult, error) {
+	var res PageGetOriginTrialsResult
+	return &res, call(m.ProtoReq(), m, &res, c)
+}
+
+// PageGetOriginTrialsResult (experimental) ...
+type PageGetOriginTrialsResult struct {
+	// OriginTrials ...
+	OriginTrials []*PageOriginTrial `json:"originTrials"`
 }
 
 // PageSetDeviceMetricsOverride (deprecated) (experimental) Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
 // window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
 // query results).
 type PageSetDeviceMetricsOverride struct {
-
 	// Width Overriding width value in pixels (minimum 0, maximum 10000000). 0 disables the override.
 	Width int `json:"width"`
 
@@ -2020,19 +2224,19 @@ type PageSetDeviceMetricsOverride struct {
 	Mobile bool `json:"mobile"`
 
 	// Scale (optional) Scale to apply to resulting view image.
-	Scale float64 `json:"scale,omitempty"`
+	Scale *float64 `json:"scale,omitempty"`
 
 	// ScreenWidth (optional) Overriding screen width value in pixels (minimum 0, maximum 10000000).
-	ScreenWidth int `json:"screenWidth,omitempty"`
+	ScreenWidth *int `json:"screenWidth,omitempty"`
 
 	// ScreenHeight (optional) Overriding screen height value in pixels (minimum 0, maximum 10000000).
-	ScreenHeight int `json:"screenHeight,omitempty"`
+	ScreenHeight *int `json:"screenHeight,omitempty"`
 
 	// PositionX (optional) Overriding view X position on screen in pixels (minimum 0, maximum 10000000).
-	PositionX int `json:"positionX,omitempty"`
+	PositionX *int `json:"positionX,omitempty"`
 
 	// PositionY (optional) Overriding view Y position on screen in pixels (minimum 0, maximum 10000000).
-	PositionY int `json:"positionY,omitempty"`
+	PositionY *int `json:"positionY,omitempty"`
 
 	// DontSetVisibleSize (optional) Do not set visible view size, rely upon explicit setVisibleSize call.
 	DontSetVisibleSize bool `json:"dontSetVisibleSize,omitempty"`
@@ -2054,7 +2258,6 @@ func (m PageSetDeviceMetricsOverride) Call(c Client) error {
 
 // PageSetDeviceOrientationOverride (deprecated) (experimental) Overrides the Device Orientation.
 type PageSetDeviceOrientationOverride struct {
-
 	// Alpha Mock alpha
 	Alpha float64 `json:"alpha"`
 
@@ -2077,9 +2280,11 @@ func (m PageSetDeviceOrientationOverride) Call(c Client) error {
 
 // PageSetFontFamilies (experimental) Set generic font families.
 type PageSetFontFamilies struct {
-
 	// FontFamilies Specifies font families to set. If a font family is not specified, it won't be changed.
 	FontFamilies *PageFontFamilies `json:"fontFamilies"`
+
+	// ForScripts (optional) Specifies font families to set for individual scripts.
+	ForScripts []*PageScriptFontFamilies `json:"forScripts,omitempty"`
 }
 
 // ProtoReq name
@@ -2092,7 +2297,6 @@ func (m PageSetFontFamilies) Call(c Client) error {
 
 // PageSetFontSizes (experimental) Set default font sizes.
 type PageSetFontSizes struct {
-
 	// FontSizes Specifies font sizes to set. If a font size is not specified, it won't be changed.
 	FontSizes *PageFontSizes `json:"fontSizes"`
 }
@@ -2107,7 +2311,6 @@ func (m PageSetFontSizes) Call(c Client) error {
 
 // PageSetDocumentContent Sets given markup as the document's HTML.
 type PageSetDocumentContent struct {
-
 	// FrameID Frame id to set HTML for.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2139,7 +2342,6 @@ const (
 
 // PageSetDownloadBehavior (deprecated) (experimental) Set the behavior when downloading a file.
 type PageSetDownloadBehavior struct {
-
 	// Behavior Whether to allow all or deny all download requests, or use default Chrome behavior if
 	// available (otherwise deny).
 	Behavior PageSetDownloadBehaviorBehavior `json:"behavior"`
@@ -2159,15 +2361,14 @@ func (m PageSetDownloadBehavior) Call(c Client) error {
 // PageSetGeolocationOverride (deprecated) Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
 // unavailable.
 type PageSetGeolocationOverride struct {
-
 	// Latitude (optional) Mock latitude
-	Latitude float64 `json:"latitude,omitempty"`
+	Latitude *float64 `json:"latitude,omitempty"`
 
 	// Longitude (optional) Mock longitude
-	Longitude float64 `json:"longitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
 
 	// Accuracy (optional) Mock accuracy
-	Accuracy float64 `json:"accuracy,omitempty"`
+	Accuracy *float64 `json:"accuracy,omitempty"`
 }
 
 // ProtoReq name
@@ -2180,7 +2381,6 @@ func (m PageSetGeolocationOverride) Call(c Client) error {
 
 // PageSetLifecycleEventsEnabled (experimental) Controls whether page will emit lifecycle events.
 type PageSetLifecycleEventsEnabled struct {
-
 	// Enabled If true, starts emitting lifecycle events.
 	Enabled bool `json:"enabled"`
 }
@@ -2206,7 +2406,6 @@ const (
 
 // PageSetTouchEmulationEnabled (deprecated) (experimental) Toggles mouse event-based touch event emulation.
 type PageSetTouchEmulationEnabled struct {
-
 	// Enabled Whether the touch event emulation should be enabled.
 	Enabled bool `json:"enabled"`
 
@@ -2235,21 +2434,20 @@ const (
 
 // PageStartScreencast (experimental) Starts sending each frame using the `screencastFrame` event.
 type PageStartScreencast struct {
-
 	// Format (optional) Image compression format.
 	Format PageStartScreencastFormat `json:"format,omitempty"`
 
 	// Quality (optional) Compression quality from range [0..100].
-	Quality int `json:"quality,omitempty"`
+	Quality *int `json:"quality,omitempty"`
 
 	// MaxWidth (optional) Maximum screenshot width.
-	MaxWidth int `json:"maxWidth,omitempty"`
+	MaxWidth *int `json:"maxWidth,omitempty"`
 
 	// MaxHeight (optional) Maximum screenshot height.
-	MaxHeight int `json:"maxHeight,omitempty"`
+	MaxHeight *int `json:"maxHeight,omitempty"`
 
 	// EveryNthFrame (optional) Send every n-th frame.
-	EveryNthFrame int `json:"everyNthFrame,omitempty"`
+	EveryNthFrame *int `json:"everyNthFrame,omitempty"`
 }
 
 // ProtoReq name
@@ -2261,8 +2459,7 @@ func (m PageStartScreencast) Call(c Client) error {
 }
 
 // PageStopLoading Force the page stop all navigations and pending resource fetches.
-type PageStopLoading struct {
-}
+type PageStopLoading struct{}
 
 // ProtoReq name
 func (m PageStopLoading) ProtoReq() string { return "Page.stopLoading" }
@@ -2273,8 +2470,7 @@ func (m PageStopLoading) Call(c Client) error {
 }
 
 // PageCrash (experimental) Crashes renderer on the IO thread, generates minidumps.
-type PageCrash struct {
-}
+type PageCrash struct{}
 
 // ProtoReq name
 func (m PageCrash) ProtoReq() string { return "Page.crash" }
@@ -2285,8 +2481,7 @@ func (m PageCrash) Call(c Client) error {
 }
 
 // PageClose (experimental) Tries to close page, running its beforeunload hooks, if any.
-type PageClose struct {
-}
+type PageClose struct{}
 
 // ProtoReq name
 func (m PageClose) ProtoReq() string { return "Page.close" }
@@ -2311,7 +2506,6 @@ const (
 // It will transition the page to the given state according to:
 // https://github.com/WICG/web-lifecycle/
 type PageSetWebLifecycleState struct {
-
 	// State Target lifecycle state
 	State PageSetWebLifecycleStateState `json:"state"`
 }
@@ -2325,8 +2519,7 @@ func (m PageSetWebLifecycleState) Call(c Client) error {
 }
 
 // PageStopScreencast (experimental) Stops sending each frame in the `screencastFrame`.
-type PageStopScreencast struct {
-}
+type PageStopScreencast struct{}
 
 // ProtoReq name
 func (m PageStopScreencast) ProtoReq() string { return "Page.stopScreencast" }
@@ -2336,33 +2529,13 @@ func (m PageStopScreencast) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
-// PageSetProduceCompilationCache (experimental) Forces compilation cache to be generated for every subresource script.
-// See also: `Page.produceCompilationCache`.
-type PageSetProduceCompilationCache struct {
-
-	// Enabled ...
-	Enabled bool `json:"enabled"`
-}
-
-// ProtoReq name
-func (m PageSetProduceCompilationCache) ProtoReq() string { return "Page.setProduceCompilationCache" }
-
-// Call sends the request
-func (m PageSetProduceCompilationCache) Call(c Client) error {
-	return call(m.ProtoReq(), m, nil, c)
-}
-
 // PageProduceCompilationCache (experimental) Requests backend to produce compilation cache for the specified scripts.
-// Unlike setProduceCompilationCache, this allows client to only produce cache
-// for specific scripts. `scripts` are appeneded to the list of scripts
-// for which the cache for would produced. Disabling compilation cache with
-// `setProduceCompilationCache` would reset all pending cache requests.
-// The list may also be reset during page navigation.
+// `scripts` are appeneded to the list of scripts for which the cache
+// would be produced. The list may be reset during page navigation.
 // When script with a matching URL is encountered, the cache is optionally
 // produced upon backend discretion, based on internal heuristics.
 // See also: `Page.compilationCacheProduced`.
 type PageProduceCompilationCache struct {
-
 	// Scripts ...
 	Scripts []*PageCompilationCacheParams `json:"scripts"`
 }
@@ -2378,7 +2551,6 @@ func (m PageProduceCompilationCache) Call(c Client) error {
 // PageAddCompilationCache (experimental) Seeds compilation cache for given url. Compilation cache does not survive
 // cross-process navigation.
 type PageAddCompilationCache struct {
-
 	// URL ...
 	URL string `json:"url"`
 
@@ -2395,8 +2567,7 @@ func (m PageAddCompilationCache) Call(c Client) error {
 }
 
 // PageClearCompilationCache (experimental) Clears seeded compilation cache.
-type PageClearCompilationCache struct {
-}
+type PageClearCompilationCache struct{}
 
 // ProtoReq name
 func (m PageClearCompilationCache) ProtoReq() string { return "Page.clearCompilationCache" }
@@ -2406,9 +2577,38 @@ func (m PageClearCompilationCache) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
+// PageSetSPCTransactionMode (experimental) Sets the Secure Payment Confirmation transaction mode.
+// https://w3c.github.io/secure-payment-confirmation/#sctn-automation-set-spc-transaction-mode
+type PageSetSPCTransactionMode struct {
+	// Mode ...
+	Mode PageAutoResponseMode `json:"mode"`
+}
+
+// ProtoReq name
+func (m PageSetSPCTransactionMode) ProtoReq() string { return "Page.setSPCTransactionMode" }
+
+// Call sends the request
+func (m PageSetSPCTransactionMode) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
+// PageSetRPHRegistrationMode (experimental) Extensions for Custom Handlers API:
+// https://html.spec.whatwg.org/multipage/system-state.html#rph-automation
+type PageSetRPHRegistrationMode struct {
+	// Mode ...
+	Mode PageAutoResponseMode `json:"mode"`
+}
+
+// ProtoReq name
+func (m PageSetRPHRegistrationMode) ProtoReq() string { return "Page.setRPHRegistrationMode" }
+
+// Call sends the request
+func (m PageSetRPHRegistrationMode) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
 // PageGenerateTestReport (experimental) Generates a report for testing.
 type PageGenerateTestReport struct {
-
 	// Message Message to be displayed in the report.
 	Message string `json:"message"`
 
@@ -2425,8 +2625,7 @@ func (m PageGenerateTestReport) Call(c Client) error {
 }
 
 // PageWaitForDebugger (experimental) Pauses page execution. Can be resumed using generic Runtime.runIfWaitingForDebugger.
-type PageWaitForDebugger struct {
-}
+type PageWaitForDebugger struct{}
 
 // ProtoReq name
 func (m PageWaitForDebugger) ProtoReq() string { return "Page.waitForDebugger" }
@@ -2440,7 +2639,6 @@ func (m PageWaitForDebugger) Call(c Client) error {
 // When file chooser interception is enabled, native file chooser dialog is not shown.
 // Instead, a protocol event `Page.fileChooserOpened` is emitted.
 type PageSetInterceptFileChooserDialog struct {
-
 	// Enabled ...
 	Enabled bool `json:"enabled"`
 }
@@ -2457,7 +2655,6 @@ func (m PageSetInterceptFileChooserDialog) Call(c Client) error {
 
 // PageDomContentEventFired ...
 type PageDomContentEventFired struct {
-
 	// Timestamp ...
 	Timestamp MonotonicTime `json:"timestamp"`
 }
@@ -2480,15 +2677,14 @@ const (
 
 // PageFileChooserOpened Emitted only when `page.interceptFileChooser` is enabled.
 type PageFileChooserOpened struct {
-
 	// FrameID (experimental) Id of the frame containing input node.
 	FrameID PageFrameID `json:"frameId"`
 
-	// BackendNodeID (experimental) Input node id.
-	BackendNodeID DOMBackendNodeID `json:"backendNodeId"`
-
 	// Mode Input mode.
 	Mode PageFileChooserOpenedMode `json:"mode"`
+
+	// BackendNodeID (experimental) (optional) Input node id. Only present for file choosers opened via an <input type="file"> element.
+	BackendNodeID DOMBackendNodeID `json:"backendNodeId,omitempty"`
 }
 
 // ProtoEvent name
@@ -2498,7 +2694,6 @@ func (evt PageFileChooserOpened) ProtoEvent() string {
 
 // PageFrameAttached Fired when frame has been attached to its parent.
 type PageFrameAttached struct {
-
 	// FrameID Id of the frame that has been attached.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2516,7 +2711,6 @@ func (evt PageFrameAttached) ProtoEvent() string {
 
 // PageFrameClearedScheduledNavigation (deprecated) Fired when frame no longer has a scheduled navigation.
 type PageFrameClearedScheduledNavigation struct {
-
 	// FrameID Id of the frame that has cleared its scheduled navigation.
 	FrameID PageFrameID `json:"frameId"`
 }
@@ -2539,7 +2733,6 @@ const (
 
 // PageFrameDetached Fired when frame has been detached from its parent.
 type PageFrameDetached struct {
-
 	// FrameID Id of the frame that has been detached.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2554,7 +2747,6 @@ func (evt PageFrameDetached) ProtoEvent() string {
 
 // PageFrameNavigated Fired once navigation of the frame has completed. Frame is now associated with the new loader.
 type PageFrameNavigated struct {
-
 	// Frame Frame object.
 	Frame *PageFrame `json:"frame"`
 
@@ -2569,7 +2761,6 @@ func (evt PageFrameNavigated) ProtoEvent() string {
 
 // PageDocumentOpened (experimental) Fired when opening document to write to.
 type PageDocumentOpened struct {
-
 	// Frame Frame object.
 	Frame *PageFrame `json:"frame"`
 }
@@ -2580,8 +2771,7 @@ func (evt PageDocumentOpened) ProtoEvent() string {
 }
 
 // PageFrameResized (experimental) ...
-type PageFrameResized struct {
-}
+type PageFrameResized struct{}
 
 // ProtoEvent name
 func (evt PageFrameResized) ProtoEvent() string {
@@ -2591,7 +2781,6 @@ func (evt PageFrameResized) ProtoEvent() string {
 // PageFrameRequestedNavigation (experimental) Fired when a renderer-initiated navigation is requested.
 // Navigation may still be cancelled after the event is issued.
 type PageFrameRequestedNavigation struct {
-
 	// FrameID Id of the frame that is being navigated.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2612,7 +2801,6 @@ func (evt PageFrameRequestedNavigation) ProtoEvent() string {
 
 // PageFrameScheduledNavigation (deprecated) Fired when frame schedules a potential navigation.
 type PageFrameScheduledNavigation struct {
-
 	// FrameID Id of the frame that has scheduled a navigation.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2634,7 +2822,6 @@ func (evt PageFrameScheduledNavigation) ProtoEvent() string {
 
 // PageFrameStartedLoading (experimental) Fired when frame has started loading.
 type PageFrameStartedLoading struct {
-
 	// FrameID Id of the frame that has started loading.
 	FrameID PageFrameID `json:"frameId"`
 }
@@ -2646,7 +2833,6 @@ func (evt PageFrameStartedLoading) ProtoEvent() string {
 
 // PageFrameStoppedLoading (experimental) Fired when frame has stopped loading.
 type PageFrameStoppedLoading struct {
-
 	// FrameID Id of the frame that has stopped loading.
 	FrameID PageFrameID `json:"frameId"`
 }
@@ -2659,7 +2845,6 @@ func (evt PageFrameStoppedLoading) ProtoEvent() string {
 // PageDownloadWillBegin (deprecated) (experimental) Fired when page is about to start a download.
 // Deprecated. Use Browser.downloadWillBegin instead.
 type PageDownloadWillBegin struct {
-
 	// FrameID Id of the frame that caused download to begin.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2695,7 +2880,6 @@ const (
 // PageDownloadProgress (deprecated) (experimental) Fired when download makes progress. Last call has |done| == true.
 // Deprecated. Use Browser.downloadProgress instead.
 type PageDownloadProgress struct {
-
 	// GUID Global unique identifier of the download.
 	GUID string `json:"guid"`
 
@@ -2715,8 +2899,7 @@ func (evt PageDownloadProgress) ProtoEvent() string {
 }
 
 // PageInterstitialHidden Fired when interstitial page was hidden
-type PageInterstitialHidden struct {
-}
+type PageInterstitialHidden struct{}
 
 // ProtoEvent name
 func (evt PageInterstitialHidden) ProtoEvent() string {
@@ -2724,8 +2907,7 @@ func (evt PageInterstitialHidden) ProtoEvent() string {
 }
 
 // PageInterstitialShown Fired when interstitial page was shown
-type PageInterstitialShown struct {
-}
+type PageInterstitialShown struct{}
 
 // ProtoEvent name
 func (evt PageInterstitialShown) ProtoEvent() string {
@@ -2735,7 +2917,6 @@ func (evt PageInterstitialShown) ProtoEvent() string {
 // PageJavascriptDialogClosed Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) has been
 // closed.
 type PageJavascriptDialogClosed struct {
-
 	// Result Whether dialog was confirmed.
 	Result bool `json:"result"`
 
@@ -2751,7 +2932,6 @@ func (evt PageJavascriptDialogClosed) ProtoEvent() string {
 // PageJavascriptDialogOpening Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) is about to
 // open.
 type PageJavascriptDialogOpening struct {
-
 	// URL Frame url.
 	URL string `json:"url"`
 
@@ -2812,7 +2992,6 @@ const (
 
 // PageLifecycleEvent Fired for top level page lifecycle events such as navigation, load, paint, etc.
 type PageLifecycleEvent struct {
-
 	// FrameID Id of the frame.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2836,7 +3015,6 @@ func (evt PageLifecycleEvent) ProtoEvent() string {
 // main-frame history navigation where the document changes (non-same-document navigations),
 // when bfcache navigation fails.
 type PageBackForwardCacheNotUsed struct {
-
 	// LoaderID The loader id for the associated navgation.
 	LoaderID NetworkLoaderID `json:"loaderId"`
 
@@ -2845,6 +3023,9 @@ type PageBackForwardCacheNotUsed struct {
 
 	// NotRestoredExplanations Array of reasons why the page could not be cached. This must not be empty.
 	NotRestoredExplanations []*PageBackForwardCacheNotRestoredExplanation `json:"notRestoredExplanations"`
+
+	// NotRestoredExplanationsTree (optional) Tree structure of reasons why the page could not be cached for each frame.
+	NotRestoredExplanationsTree *PageBackForwardCacheNotRestoredExplanationTree `json:"notRestoredExplanationsTree,omitempty"`
 }
 
 // ProtoEvent name
@@ -2854,7 +3035,6 @@ func (evt PageBackForwardCacheNotUsed) ProtoEvent() string {
 
 // PageLoadEventFired ...
 type PageLoadEventFired struct {
-
 	// Timestamp ...
 	Timestamp MonotonicTime `json:"timestamp"`
 }
@@ -2866,7 +3046,6 @@ func (evt PageLoadEventFired) ProtoEvent() string {
 
 // PageNavigatedWithinDocument (experimental) Fired when same-document navigation happens, e.g. due to history API usage or anchor navigation.
 type PageNavigatedWithinDocument struct {
-
 	// FrameID Id of the frame.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -2881,7 +3060,6 @@ func (evt PageNavigatedWithinDocument) ProtoEvent() string {
 
 // PageScreencastFrame (experimental) Compressed image data requested by the `startScreencast`.
 type PageScreencastFrame struct {
-
 	// Data Base64-encoded compressed image.
 	Data []byte `json:"data"`
 
@@ -2899,7 +3077,6 @@ func (evt PageScreencastFrame) ProtoEvent() string {
 
 // PageScreencastVisibilityChanged (experimental) Fired when the page with currently enabled screencast was shown or hidden `.
 type PageScreencastVisibilityChanged struct {
-
 	// Visible True if the page is visible.
 	Visible bool `json:"visible"`
 }
@@ -2912,7 +3089,6 @@ func (evt PageScreencastVisibilityChanged) ProtoEvent() string {
 // PageWindowOpen Fired when a new window is going to be opened, via window.open(), link click, form submission,
 // etc.
 type PageWindowOpen struct {
-
 	// URL The URL for the new window.
 	URL string `json:"url"`
 
@@ -2934,7 +3110,6 @@ func (evt PageWindowOpen) ProtoEvent() string {
 // PageCompilationCacheProduced (experimental) Issued for every compilation cache generated. Is only available
 // if Page.setGenerateCompilationCache is enabled.
 type PageCompilationCacheProduced struct {
-
 	// URL ...
 	URL string `json:"url"`
 

@@ -46,6 +46,9 @@ const (
 	// NetworkResourceTypeFetch enum const
 	NetworkResourceTypeFetch NetworkResourceType = "Fetch"
 
+	// NetworkResourceTypePrefetch enum const
+	NetworkResourceTypePrefetch NetworkResourceType = "Prefetch"
+
 	// NetworkResourceTypeEventSource enum const
 	NetworkResourceTypeEventSource NetworkResourceType = "EventSource"
 
@@ -210,7 +213,6 @@ const (
 
 // NetworkResourceTiming Timing information for the request.
 type NetworkResourceTiming struct {
-
 	// RequestTime Timing's requestTime is a baseline in seconds, while the other numbers are ticks in
 	// milliseconds relatively to this requestTime.
 	RequestTime float64 `json:"requestTime"`
@@ -289,7 +291,6 @@ const (
 
 // NetworkPostDataEntry Post data entry for HTTP request
 type NetworkPostDataEntry struct {
-
 	// Bytes (optional) ...
 	Bytes []byte `json:"bytes,omitempty"`
 }
@@ -325,7 +326,6 @@ const (
 
 // NetworkRequest HTTP request data.
 type NetworkRequest struct {
-
 	// URL Request URL (without fragment).
 	URL string `json:"url"`
 
@@ -370,7 +370,6 @@ type NetworkRequest struct {
 
 // NetworkSignedCertificateTimestamp Details of a signed certificate timestamp (SCT).
 type NetworkSignedCertificateTimestamp struct {
-
 	// Status Validation status.
 	Status string `json:"status"`
 
@@ -383,8 +382,9 @@ type NetworkSignedCertificateTimestamp struct {
 	// LogID Log ID.
 	LogID string `json:"logId"`
 
-	// Timestamp Issuance date.
-	Timestamp TimeSinceEpoch `json:"timestamp"`
+	// Timestamp Issuance date. Unlike TimeSinceEpoch, this contains the number of
+	// milliseconds since January 1, 1970, UTC, not the number of seconds.
+	Timestamp float64 `json:"timestamp"`
 
 	// HashAlgorithm Hash algorithm.
 	HashAlgorithm string `json:"hashAlgorithm"`
@@ -398,7 +398,6 @@ type NetworkSignedCertificateTimestamp struct {
 
 // NetworkSecurityDetails Security details about a request.
 type NetworkSecurityDetails struct {
-
 	// Protocol Protocol name (e.g. "TLS 1.2" or "QUIC").
 	Protocol string `json:"protocol"`
 
@@ -437,6 +436,14 @@ type NetworkSecurityDetails struct {
 
 	// CertificateTransparencyCompliance Whether the request complied with Certificate Transparency policy
 	CertificateTransparencyCompliance NetworkCertificateTransparencyCompliance `json:"certificateTransparencyCompliance"`
+
+	// ServerSignatureAlgorithm (optional) The signature algorithm used by the server in the TLS server signature,
+	// represented as a TLS SignatureScheme code point. Omitted if not
+	// applicable or not known.
+	ServerSignatureAlgorithm *int `json:"serverSignatureAlgorithm,omitempty"`
+
+	// EncryptedClientHello Whether the connection used Encrypted ClientHello
+	EncryptedClientHello bool `json:"encryptedClientHello"`
 }
 
 // NetworkCertificateTransparencyCompliance Whether the request complied with Certificate Transparency policy.
@@ -555,6 +562,12 @@ const (
 	// NetworkCorsErrorPreflightInvalidAllowExternal enum const
 	NetworkCorsErrorPreflightInvalidAllowExternal NetworkCorsError = "PreflightInvalidAllowExternal"
 
+	// NetworkCorsErrorPreflightMissingAllowPrivateNetwork enum const
+	NetworkCorsErrorPreflightMissingAllowPrivateNetwork NetworkCorsError = "PreflightMissingAllowPrivateNetwork"
+
+	// NetworkCorsErrorPreflightInvalidAllowPrivateNetwork enum const
+	NetworkCorsErrorPreflightInvalidAllowPrivateNetwork NetworkCorsError = "PreflightInvalidAllowPrivateNetwork"
+
 	// NetworkCorsErrorInvalidAllowMethodsPreflightResponse enum const
 	NetworkCorsErrorInvalidAllowMethodsPreflightResponse NetworkCorsError = "InvalidAllowMethodsPreflightResponse"
 
@@ -573,13 +586,18 @@ const (
 	// NetworkCorsErrorInsecurePrivateNetwork enum const
 	NetworkCorsErrorInsecurePrivateNetwork NetworkCorsError = "InsecurePrivateNetwork"
 
+	// NetworkCorsErrorInvalidPrivateNetworkAccess enum const
+	NetworkCorsErrorInvalidPrivateNetworkAccess NetworkCorsError = "InvalidPrivateNetworkAccess"
+
+	// NetworkCorsErrorUnexpectedPrivateNetworkAccess enum const
+	NetworkCorsErrorUnexpectedPrivateNetworkAccess NetworkCorsError = "UnexpectedPrivateNetworkAccess"
+
 	// NetworkCorsErrorNoCorsRedirectModeNotFollow enum const
 	NetworkCorsErrorNoCorsRedirectModeNotFollow NetworkCorsError = "NoCorsRedirectModeNotFollow"
 )
 
 // NetworkCorsErrorStatus ...
 type NetworkCorsErrorStatus struct {
-
 	// CorsError ...
 	CorsError NetworkCorsError `json:"corsError"`
 
@@ -619,11 +637,10 @@ const (
 // depending on the type, some additional parameters. The values
 // are specified in third_party/blink/renderer/core/fetch/trust_token.idl.
 type NetworkTrustTokenParams struct {
+	// Operation ...
+	Operation NetworkTrustTokenOperationType `json:"operation"`
 
-	// Type ...
-	Type NetworkTrustTokenOperationType `json:"type"`
-
-	// RefreshPolicy Only set for "token-redemption" type and determine whether
+	// RefreshPolicy Only set for "token-redemption" operation and determine whether
 	// to request a fresh SRR or use a still valid cached SRR.
 	RefreshPolicy NetworkTrustTokenParamsRefreshPolicy `json:"refreshPolicy"`
 
@@ -646,9 +663,37 @@ const (
 	NetworkTrustTokenOperationTypeSigning NetworkTrustTokenOperationType = "Signing"
 )
 
+// NetworkAlternateProtocolUsage (experimental) The reason why Chrome uses a specific transport protocol for HTTP semantics.
+type NetworkAlternateProtocolUsage string
+
+const (
+	// NetworkAlternateProtocolUsageAlternativeJobWonWithoutRace enum const
+	NetworkAlternateProtocolUsageAlternativeJobWonWithoutRace NetworkAlternateProtocolUsage = "alternativeJobWonWithoutRace"
+
+	// NetworkAlternateProtocolUsageAlternativeJobWonRace enum const
+	NetworkAlternateProtocolUsageAlternativeJobWonRace NetworkAlternateProtocolUsage = "alternativeJobWonRace"
+
+	// NetworkAlternateProtocolUsageMainJobWonRace enum const
+	NetworkAlternateProtocolUsageMainJobWonRace NetworkAlternateProtocolUsage = "mainJobWonRace"
+
+	// NetworkAlternateProtocolUsageMappingMissing enum const
+	NetworkAlternateProtocolUsageMappingMissing NetworkAlternateProtocolUsage = "mappingMissing"
+
+	// NetworkAlternateProtocolUsageBroken enum const
+	NetworkAlternateProtocolUsageBroken NetworkAlternateProtocolUsage = "broken"
+
+	// NetworkAlternateProtocolUsageDNSAlpnH3JobWonWithoutRace enum const
+	NetworkAlternateProtocolUsageDNSAlpnH3JobWonWithoutRace NetworkAlternateProtocolUsage = "dnsAlpnH3JobWonWithoutRace"
+
+	// NetworkAlternateProtocolUsageDNSAlpnH3JobWonRace enum const
+	NetworkAlternateProtocolUsageDNSAlpnH3JobWonRace NetworkAlternateProtocolUsage = "dnsAlpnH3JobWonRace"
+
+	// NetworkAlternateProtocolUsageUnspecifiedReason enum const
+	NetworkAlternateProtocolUsageUnspecifiedReason NetworkAlternateProtocolUsage = "unspecifiedReason"
+)
+
 // NetworkResponse HTTP response data.
 type NetworkResponse struct {
-
 	// URL Response URL. This URL can be different from CachedResource.url in case of redirect.
 	URL string `json:"url"`
 
@@ -661,7 +706,7 @@ type NetworkResponse struct {
 	// Headers HTTP response headers.
 	Headers NetworkHeaders `json:"headers"`
 
-	// HeadersText (optional) HTTP response headers text.
+	// HeadersText (deprecated) (optional) HTTP response headers text. This has been replaced by the headers in Network.responseReceivedExtraInfo.
 	HeadersText string `json:"headersText,omitempty"`
 
 	// MIMEType Resource mimeType as determined by the browser.
@@ -670,7 +715,7 @@ type NetworkResponse struct {
 	// RequestHeaders (optional) Refined HTTP request headers that were actually transmitted over the network.
 	RequestHeaders NetworkHeaders `json:"requestHeaders,omitempty"`
 
-	// RequestHeadersText (optional) HTTP request headers text.
+	// RequestHeadersText (deprecated) (optional) HTTP request headers text. This has been replaced by the headers in Network.requestWillBeSentExtraInfo.
 	RequestHeadersText string `json:"requestHeadersText,omitempty"`
 
 	// ConnectionReused Specifies whether physical connection was actually reused for this request.
@@ -683,7 +728,7 @@ type NetworkResponse struct {
 	RemoteIPAddress string `json:"remoteIPAddress,omitempty"`
 
 	// RemotePort (optional) Remote port.
-	RemotePort int `json:"remotePort,omitempty"`
+	RemotePort *int `json:"remotePort,omitempty"`
 
 	// FromDiskCache (optional) Specifies that the request was served from the disk cache.
 	FromDiskCache bool `json:"fromDiskCache,omitempty"`
@@ -712,6 +757,9 @@ type NetworkResponse struct {
 	// Protocol (optional) Protocol used to fetch this request.
 	Protocol string `json:"protocol,omitempty"`
 
+	// AlternateProtocolUsage (experimental) (optional) The reason why Chrome uses a specific transport protocol for HTTP semantics.
+	AlternateProtocolUsage NetworkAlternateProtocolUsage `json:"alternateProtocolUsage,omitempty"`
+
 	// SecurityState Security state of the request resource.
 	SecurityState SecuritySecurityState `json:"securityState"`
 
@@ -721,14 +769,12 @@ type NetworkResponse struct {
 
 // NetworkWebSocketRequest WebSocket request data.
 type NetworkWebSocketRequest struct {
-
 	// Headers HTTP request headers.
 	Headers NetworkHeaders `json:"headers"`
 }
 
 // NetworkWebSocketResponse WebSocket response data.
 type NetworkWebSocketResponse struct {
-
 	// Status HTTP response status code.
 	Status int `json:"status"`
 
@@ -750,7 +796,6 @@ type NetworkWebSocketResponse struct {
 
 // NetworkWebSocketFrame WebSocket message data. This represents an entire WebSocket message, not just a fragmented frame as the name suggests.
 type NetworkWebSocketFrame struct {
-
 	// Opcode WebSocket message opcode.
 	Opcode float64 `json:"opcode"`
 
@@ -765,7 +810,6 @@ type NetworkWebSocketFrame struct {
 
 // NetworkCachedResource Information about the cached resource.
 type NetworkCachedResource struct {
-
 	// URL Resource URL. This is the url of the original network request.
 	URL string `json:"url"`
 
@@ -804,7 +848,6 @@ const (
 
 // NetworkInitiator Information about the request initiator.
 type NetworkInitiator struct {
-
 	// Type Type of this initiator.
 	Type NetworkInitiatorType `json:"type"`
 
@@ -816,11 +859,11 @@ type NetworkInitiator struct {
 
 	// LineNumber (optional) Initiator line number, set for Parser type or for Script type (when script is importing
 	// module) (0-based).
-	LineNumber float64 `json:"lineNumber,omitempty"`
+	LineNumber *float64 `json:"lineNumber,omitempty"`
 
 	// ColumnNumber (optional) Initiator column number, set for Parser type or for Script type (when script is importing
 	// module) (0-based).
-	ColumnNumber float64 `json:"columnNumber,omitempty"`
+	ColumnNumber *float64 `json:"columnNumber,omitempty"`
 
 	// RequestID (optional) Set if another request triggered this request (e.g. preflight).
 	RequestID NetworkRequestID `json:"requestId,omitempty"`
@@ -828,7 +871,6 @@ type NetworkInitiator struct {
 
 // NetworkCookie Cookie object
 type NetworkCookie struct {
-
 	// Name Cookie name.
 	Name string `json:"name"`
 
@@ -872,6 +914,13 @@ type NetworkCookie struct {
 	// An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
 	// This is a temporary ability and it will be removed in the future.
 	SourcePort int `json:"sourcePort"`
+
+	// PartitionKey (experimental) (optional) Cookie partition key. The site of the top-level URL the browser was visiting at the start
+	// of the request to the endpoint that set the cookie.
+	PartitionKey string `json:"partitionKey,omitempty"`
+
+	// PartitionKeyOpaque (experimental) (optional) True if cookie partition key is opaque.
+	PartitionKeyOpaque bool `json:"partitionKeyOpaque,omitempty"`
 }
 
 // NetworkSetCookieBlockedReason (experimental) Types of reasons why a cookie may not be stored from a response.
@@ -895,6 +944,9 @@ const (
 
 	// NetworkSetCookieBlockedReasonUserPreferences enum const
 	NetworkSetCookieBlockedReasonUserPreferences NetworkSetCookieBlockedReason = "UserPreferences"
+
+	// NetworkSetCookieBlockedReasonThirdPartyBlockedInFirstPartySet enum const
+	NetworkSetCookieBlockedReasonThirdPartyBlockedInFirstPartySet NetworkSetCookieBlockedReason = "ThirdPartyBlockedInFirstPartySet"
 
 	// NetworkSetCookieBlockedReasonSyntaxError enum const
 	NetworkSetCookieBlockedReasonSyntaxError NetworkSetCookieBlockedReason = "SyntaxError"
@@ -928,6 +980,9 @@ const (
 
 	// NetworkSetCookieBlockedReasonSamePartyConflictsWithOtherAttributes enum const
 	NetworkSetCookieBlockedReasonSamePartyConflictsWithOtherAttributes NetworkSetCookieBlockedReason = "SamePartyConflictsWithOtherAttributes"
+
+	// NetworkSetCookieBlockedReasonNameValuePairExceedsMaxSize enum const
+	NetworkSetCookieBlockedReasonNameValuePairExceedsMaxSize NetworkSetCookieBlockedReason = "NameValuePairExceedsMaxSize"
 )
 
 // NetworkCookieBlockedReason (experimental) Types of reasons why a cookie may not be sent with a request.
@@ -958,6 +1013,9 @@ const (
 	// NetworkCookieBlockedReasonUserPreferences enum const
 	NetworkCookieBlockedReasonUserPreferences NetworkCookieBlockedReason = "UserPreferences"
 
+	// NetworkCookieBlockedReasonThirdPartyBlockedInFirstPartySet enum const
+	NetworkCookieBlockedReasonThirdPartyBlockedInFirstPartySet NetworkCookieBlockedReason = "ThirdPartyBlockedInFirstPartySet"
+
 	// NetworkCookieBlockedReasonUnknownError enum const
 	NetworkCookieBlockedReasonUnknownError NetworkCookieBlockedReason = "UnknownError"
 
@@ -972,11 +1030,13 @@ const (
 
 	// NetworkCookieBlockedReasonSamePartyFromCrossPartyContext enum const
 	NetworkCookieBlockedReasonSamePartyFromCrossPartyContext NetworkCookieBlockedReason = "SamePartyFromCrossPartyContext"
+
+	// NetworkCookieBlockedReasonNameValuePairExceedsMaxSize enum const
+	NetworkCookieBlockedReasonNameValuePairExceedsMaxSize NetworkCookieBlockedReason = "NameValuePairExceedsMaxSize"
 )
 
 // NetworkBlockedSetCookieWithReason (experimental) A cookie which was not stored from a response with the corresponding reason.
 type NetworkBlockedSetCookieWithReason struct {
-
 	// BlockedReasons The reason(s) this cookie was blocked.
 	BlockedReasons []NetworkSetCookieBlockedReason `json:"blockedReasons"`
 
@@ -992,7 +1052,6 @@ type NetworkBlockedSetCookieWithReason struct {
 
 // NetworkBlockedCookieWithReason (experimental) A cookie with was not sent with a request with the corresponding reason.
 type NetworkBlockedCookieWithReason struct {
-
 	// BlockedReasons The reason(s) the cookie was blocked.
 	BlockedReasons []NetworkCookieBlockedReason `json:"blockedReasons"`
 
@@ -1002,7 +1061,6 @@ type NetworkBlockedCookieWithReason struct {
 
 // NetworkCookieParam Cookie parameter object
 type NetworkCookieParam struct {
-
 	// Name Cookie name.
 	Name string `json:"name"`
 
@@ -1043,7 +1101,12 @@ type NetworkCookieParam struct {
 	// SourcePort (experimental) (optional) Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port.
 	// An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
 	// This is a temporary ability and it will be removed in the future.
-	SourcePort int `json:"sourcePort,omitempty"`
+	SourcePort *int `json:"sourcePort,omitempty"`
+
+	// PartitionKey (experimental) (optional) Cookie partition key. The site of the top-level URL the browser was visiting at the start
+	// of the request to the endpoint that set the cookie.
+	// If not set, the cookie will be set as not partitioned.
+	PartitionKey string `json:"partitionKey,omitempty"`
 }
 
 // NetworkAuthChallengeSource enum
@@ -1059,7 +1122,6 @@ const (
 
 // NetworkAuthChallenge (experimental) Authorization challenge for HTTP status code 401 or 407.
 type NetworkAuthChallenge struct {
-
 	// Source (optional) Source of the authentication challenge.
 	Source NetworkAuthChallengeSource `json:"source,omitempty"`
 
@@ -1089,7 +1151,6 @@ const (
 
 // NetworkAuthChallengeResponse (experimental) Response to an AuthChallenge.
 type NetworkAuthChallengeResponse struct {
-
 	// Response The decision on what to do in response to the authorization challenge.  Default means
 	// deferring to the default behavior of the net stack, which will likely either the Cancel
 	// authentication or display a popup dialog box.
@@ -1118,7 +1179,6 @@ const (
 
 // NetworkRequestPattern (experimental) Request pattern for interception.
 type NetworkRequestPattern struct {
-
 	// URLPattern (optional) Wildcards (`'*'` -> zero or more, `'?'` -> exactly one) are allowed. Escape character is
 	// backslash. Omitting is equivalent to `"*"`.
 	URLPattern string `json:"urlPattern,omitempty"`
@@ -1133,7 +1193,6 @@ type NetworkRequestPattern struct {
 // NetworkSignedExchangeSignature (experimental) Information about a signed exchange signature.
 // https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#rfc.section.3.1
 type NetworkSignedExchangeSignature struct {
-
 	// Label Signed exchange signature label.
 	Label string `json:"label"`
 
@@ -1165,7 +1224,6 @@ type NetworkSignedExchangeSignature struct {
 // NetworkSignedExchangeHeader (experimental) Information about a signed exchange header.
 // https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#cbor-representation
 type NetworkSignedExchangeHeader struct {
-
 	// RequestURL Signed exchange request URL.
 	RequestURL string `json:"requestUrl"`
 
@@ -1207,12 +1265,11 @@ const (
 
 // NetworkSignedExchangeError (experimental) Information about a signed exchange response.
 type NetworkSignedExchangeError struct {
-
 	// Message Error message.
 	Message string `json:"message"`
 
 	// SignatureIndex (optional) The index of the signature which caused the error.
-	SignatureIndex int `json:"signatureIndex,omitempty"`
+	SignatureIndex *int `json:"signatureIndex,omitempty"`
 
 	// ErrorField (optional) The field which caused the error.
 	ErrorField NetworkSignedExchangeErrorField `json:"errorField,omitempty"`
@@ -1220,7 +1277,6 @@ type NetworkSignedExchangeError struct {
 
 // NetworkSignedExchangeInfo (experimental) Information about a signed exchange response.
 type NetworkSignedExchangeInfo struct {
-
 	// OuterResponse The outer response of signed HTTP exchange which was received from network.
 	OuterResponse *NetworkResponse `json:"outerResponse"`
 
@@ -1260,6 +1316,12 @@ const (
 
 	// NetworkPrivateNetworkRequestPolicyWarnFromInsecureToMorePrivate enum const
 	NetworkPrivateNetworkRequestPolicyWarnFromInsecureToMorePrivate NetworkPrivateNetworkRequestPolicy = "WarnFromInsecureToMorePrivate"
+
+	// NetworkPrivateNetworkRequestPolicyPreflightBlock enum const
+	NetworkPrivateNetworkRequestPolicyPreflightBlock NetworkPrivateNetworkRequestPolicy = "PreflightBlock"
+
+	// NetworkPrivateNetworkRequestPolicyPreflightWarn enum const
+	NetworkPrivateNetworkRequestPolicyPreflightWarn NetworkPrivateNetworkRequestPolicy = "PreflightWarn"
 )
 
 // NetworkIPAddressSpace (experimental) ...
@@ -1279,9 +1341,16 @@ const (
 	NetworkIPAddressSpaceUnknown NetworkIPAddressSpace = "Unknown"
 )
 
+// NetworkConnectTiming (experimental) ...
+type NetworkConnectTiming struct {
+	// RequestTime Timing's requestTime is a baseline in seconds, while the other numbers are ticks in
+	// milliseconds relatively to this requestTime. Matches ResourceTiming's requestTime for
+	// the same request (but not for redirected requests).
+	RequestTime float64 `json:"requestTime"`
+}
+
 // NetworkClientSecurityState (experimental) ...
 type NetworkClientSecurityState struct {
-
 	// InitiatorIsSecureContext ...
 	InitiatorIsSecureContext bool `json:"initiatorIsSecureContext"`
 
@@ -1302,16 +1371,21 @@ const (
 	// NetworkCrossOriginOpenerPolicyValueSameOriginAllowPopups enum const
 	NetworkCrossOriginOpenerPolicyValueSameOriginAllowPopups NetworkCrossOriginOpenerPolicyValue = "SameOriginAllowPopups"
 
+	// NetworkCrossOriginOpenerPolicyValueRestrictProperties enum const
+	NetworkCrossOriginOpenerPolicyValueRestrictProperties NetworkCrossOriginOpenerPolicyValue = "RestrictProperties"
+
 	// NetworkCrossOriginOpenerPolicyValueUnsafeNone enum const
 	NetworkCrossOriginOpenerPolicyValueUnsafeNone NetworkCrossOriginOpenerPolicyValue = "UnsafeNone"
 
 	// NetworkCrossOriginOpenerPolicyValueSameOriginPlusCoep enum const
 	NetworkCrossOriginOpenerPolicyValueSameOriginPlusCoep NetworkCrossOriginOpenerPolicyValue = "SameOriginPlusCoep"
+
+	// NetworkCrossOriginOpenerPolicyValueRestrictPropertiesPlusCoep enum const
+	NetworkCrossOriginOpenerPolicyValueRestrictPropertiesPlusCoep NetworkCrossOriginOpenerPolicyValue = "RestrictPropertiesPlusCoep"
 )
 
 // NetworkCrossOriginOpenerPolicyStatus (experimental) ...
 type NetworkCrossOriginOpenerPolicyStatus struct {
-
 	// Value ...
 	Value NetworkCrossOriginOpenerPolicyValue `json:"value"`
 
@@ -1341,7 +1415,6 @@ const (
 
 // NetworkCrossOriginEmbedderPolicyStatus (experimental) ...
 type NetworkCrossOriginEmbedderPolicyStatus struct {
-
 	// Value ...
 	Value NetworkCrossOriginEmbedderPolicyValue `json:"value"`
 
@@ -1357,7 +1430,6 @@ type NetworkCrossOriginEmbedderPolicyStatus struct {
 
 // NetworkSecurityIsolationStatus (experimental) ...
 type NetworkSecurityIsolationStatus struct {
-
 	// Coop (optional) ...
 	Coop *NetworkCrossOriginOpenerPolicyStatus `json:"coop,omitempty"`
 
@@ -1365,20 +1437,78 @@ type NetworkSecurityIsolationStatus struct {
 	Coep *NetworkCrossOriginEmbedderPolicyStatus `json:"coep,omitempty"`
 }
 
+// NetworkReportStatus (experimental) The status of a Reporting API report.
+type NetworkReportStatus string
+
+const (
+	// NetworkReportStatusQueued enum const
+	NetworkReportStatusQueued NetworkReportStatus = "Queued"
+
+	// NetworkReportStatusPending enum const
+	NetworkReportStatusPending NetworkReportStatus = "Pending"
+
+	// NetworkReportStatusMarkedForRemoval enum const
+	NetworkReportStatusMarkedForRemoval NetworkReportStatus = "MarkedForRemoval"
+
+	// NetworkReportStatusSuccess enum const
+	NetworkReportStatusSuccess NetworkReportStatus = "Success"
+)
+
+// NetworkReportID (experimental) ...
+type NetworkReportID string
+
+// NetworkReportingAPIReport (experimental) An object representing a report generated by the Reporting API.
+type NetworkReportingAPIReport struct {
+	// ID ...
+	ID NetworkReportID `json:"id"`
+
+	// InitiatorURL The URL of the document that triggered the report.
+	InitiatorURL string `json:"initiatorUrl"`
+
+	// Destination The name of the endpoint group that should be used to deliver the report.
+	Destination string `json:"destination"`
+
+	// Type The type of the report (specifies the set of data that is contained in the report body).
+	Type string `json:"type"`
+
+	// Timestamp When the report was generated.
+	Timestamp TimeSinceEpoch `json:"timestamp"`
+
+	// Depth How many uploads deep the related request was.
+	Depth int `json:"depth"`
+
+	// CompletedAttempts The number of delivery attempts made so far, not including an active attempt.
+	CompletedAttempts int `json:"completedAttempts"`
+
+	// Body ...
+	Body map[string]gson.JSON `json:"body"`
+
+	// Status ...
+	Status NetworkReportStatus `json:"status"`
+}
+
+// NetworkReportingAPIEndpoint (experimental) ...
+type NetworkReportingAPIEndpoint struct {
+	// URL The URL of the endpoint to which reports may be delivered.
+	URL string `json:"url"`
+
+	// GroupName Name of the endpoint group.
+	GroupName string `json:"groupName"`
+}
+
 // NetworkLoadNetworkResourcePageResult (experimental) An object providing the result of a network resource load.
 type NetworkLoadNetworkResourcePageResult struct {
-
 	// Success ...
 	Success bool `json:"success"`
 
 	// NetError (optional) Optional values used for error reporting.
-	NetError float64 `json:"netError,omitempty"`
+	NetError *float64 `json:"netError,omitempty"`
 
 	// NetErrorName (optional) ...
 	NetErrorName string `json:"netErrorName,omitempty"`
 
 	// HTTPStatusCode (optional) ...
-	HTTPStatusCode float64 `json:"httpStatusCode,omitempty"`
+	HTTPStatusCode *float64 `json:"httpStatusCode,omitempty"`
 
 	// Stream (optional) If successful, one of the following two fields holds the result.
 	Stream IOStreamHandle `json:"stream,omitempty"`
@@ -1390,7 +1520,6 @@ type NetworkLoadNetworkResourcePageResult struct {
 // NetworkLoadNetworkResourceOptions (experimental) An options object that may be extended later to better support CORS,
 // CORB and streaming.
 type NetworkLoadNetworkResourceOptions struct {
-
 	// DisableCache ...
 	DisableCache bool `json:"disableCache"`
 
@@ -1400,7 +1529,6 @@ type NetworkLoadNetworkResourceOptions struct {
 
 // NetworkSetAcceptedEncodings (experimental) Sets a list of content encodings that will be accepted. Empty list means no encoding is accepted.
 type NetworkSetAcceptedEncodings struct {
-
 	// Encodings List of accepted content encodings.
 	Encodings []NetworkContentEncoding `json:"encodings"`
 }
@@ -1414,8 +1542,7 @@ func (m NetworkSetAcceptedEncodings) Call(c Client) error {
 }
 
 // NetworkClearAcceptedEncodingsOverride (experimental) Clears accepted encodings set by setAcceptedEncodings
-type NetworkClearAcceptedEncodingsOverride struct {
-}
+type NetworkClearAcceptedEncodingsOverride struct{}
 
 // ProtoReq name
 func (m NetworkClearAcceptedEncodingsOverride) ProtoReq() string {
@@ -1428,8 +1555,7 @@ func (m NetworkClearAcceptedEncodingsOverride) Call(c Client) error {
 }
 
 // NetworkCanClearBrowserCache (deprecated) Tells whether clearing browser cache is supported.
-type NetworkCanClearBrowserCache struct {
-}
+type NetworkCanClearBrowserCache struct{}
 
 // ProtoReq name
 func (m NetworkCanClearBrowserCache) ProtoReq() string { return "Network.canClearBrowserCache" }
@@ -1440,16 +1566,14 @@ func (m NetworkCanClearBrowserCache) Call(c Client) (*NetworkCanClearBrowserCach
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkCanClearBrowserCacheResult (deprecated) Tells whether clearing browser cache is supported.
+// NetworkCanClearBrowserCacheResult (deprecated) ...
 type NetworkCanClearBrowserCacheResult struct {
-
 	// Result True if browser cache can be cleared.
 	Result bool `json:"result"`
 }
 
 // NetworkCanClearBrowserCookies (deprecated) Tells whether clearing browser cookies is supported.
-type NetworkCanClearBrowserCookies struct {
-}
+type NetworkCanClearBrowserCookies struct{}
 
 // ProtoReq name
 func (m NetworkCanClearBrowserCookies) ProtoReq() string { return "Network.canClearBrowserCookies" }
@@ -1460,16 +1584,14 @@ func (m NetworkCanClearBrowserCookies) Call(c Client) (*NetworkCanClearBrowserCo
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkCanClearBrowserCookiesResult (deprecated) Tells whether clearing browser cookies is supported.
+// NetworkCanClearBrowserCookiesResult (deprecated) ...
 type NetworkCanClearBrowserCookiesResult struct {
-
 	// Result True if browser cookies can be cleared.
 	Result bool `json:"result"`
 }
 
 // NetworkCanEmulateNetworkConditions (deprecated) Tells whether emulation of network conditions is supported.
-type NetworkCanEmulateNetworkConditions struct {
-}
+type NetworkCanEmulateNetworkConditions struct{}
 
 // ProtoReq name
 func (m NetworkCanEmulateNetworkConditions) ProtoReq() string {
@@ -1482,16 +1604,14 @@ func (m NetworkCanEmulateNetworkConditions) Call(c Client) (*NetworkCanEmulateNe
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkCanEmulateNetworkConditionsResult (deprecated) Tells whether emulation of network conditions is supported.
+// NetworkCanEmulateNetworkConditionsResult (deprecated) ...
 type NetworkCanEmulateNetworkConditionsResult struct {
-
 	// Result True if emulation of network conditions is supported.
 	Result bool `json:"result"`
 }
 
 // NetworkClearBrowserCache Clears browser cache.
-type NetworkClearBrowserCache struct {
-}
+type NetworkClearBrowserCache struct{}
 
 // ProtoReq name
 func (m NetworkClearBrowserCache) ProtoReq() string { return "Network.clearBrowserCache" }
@@ -1502,8 +1622,7 @@ func (m NetworkClearBrowserCache) Call(c Client) error {
 }
 
 // NetworkClearBrowserCookies Clears browser cookies.
-type NetworkClearBrowserCookies struct {
-}
+type NetworkClearBrowserCookies struct{}
 
 // ProtoReq name
 func (m NetworkClearBrowserCookies) ProtoReq() string { return "Network.clearBrowserCookies" }
@@ -1519,7 +1638,6 @@ func (m NetworkClearBrowserCookies) Call(c Client) error {
 // event will be sent with the same InterceptionId.
 // Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
 type NetworkContinueInterceptedRequest struct {
-
 	// InterceptionID ...
 	InterceptionID NetworkInterceptionID `json:"interceptionId"`
 
@@ -1563,7 +1681,6 @@ func (m NetworkContinueInterceptedRequest) Call(c Client) error {
 
 // NetworkDeleteCookies Deletes browser cookies with matching name and url or domain/path pair.
 type NetworkDeleteCookies struct {
-
 	// Name Name of the cookies to remove.
 	Name string `json:"name"`
 
@@ -1587,8 +1704,7 @@ func (m NetworkDeleteCookies) Call(c Client) error {
 }
 
 // NetworkDisable Disables network tracking, prevents network events from being sent to the client.
-type NetworkDisable struct {
-}
+type NetworkDisable struct{}
 
 // ProtoReq name
 func (m NetworkDisable) ProtoReq() string { return "Network.disable" }
@@ -1600,7 +1716,6 @@ func (m NetworkDisable) Call(c Client) error {
 
 // NetworkEmulateNetworkConditions Activates emulation of network conditions.
 type NetworkEmulateNetworkConditions struct {
-
 	// Offline True to emulate internet disconnection.
 	Offline bool `json:"offline"`
 
@@ -1627,15 +1742,14 @@ func (m NetworkEmulateNetworkConditions) Call(c Client) error {
 
 // NetworkEnable Enables network tracking, network events will now be delivered to the client.
 type NetworkEnable struct {
-
 	// MaxTotalBufferSize (experimental) (optional) Buffer size in bytes to use when preserving network payloads (XHRs, etc).
-	MaxTotalBufferSize int `json:"maxTotalBufferSize,omitempty"`
+	MaxTotalBufferSize *int `json:"maxTotalBufferSize,omitempty"`
 
 	// MaxResourceBufferSize (experimental) (optional) Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
-	MaxResourceBufferSize int `json:"maxResourceBufferSize,omitempty"`
+	MaxResourceBufferSize *int `json:"maxResourceBufferSize,omitempty"`
 
 	// MaxPostDataSize (optional) Longest post body size (in bytes) that would be included in requestWillBeSent notification
-	MaxPostDataSize int `json:"maxPostDataSize,omitempty"`
+	MaxPostDataSize *int `json:"maxPostDataSize,omitempty"`
 }
 
 // ProtoReq name
@@ -1646,10 +1760,10 @@ func (m NetworkEnable) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
-// NetworkGetAllCookies Returns all browser cookies. Depending on the backend support, will return detailed cookie
+// NetworkGetAllCookies (deprecated) Returns all browser cookies. Depending on the backend support, will return detailed cookie
 // information in the `cookies` field.
-type NetworkGetAllCookies struct {
-}
+// Deprecated. Use Storage.getCookies instead.
+type NetworkGetAllCookies struct{}
 
 // ProtoReq name
 func (m NetworkGetAllCookies) ProtoReq() string { return "Network.getAllCookies" }
@@ -1660,17 +1774,14 @@ func (m NetworkGetAllCookies) Call(c Client) (*NetworkGetAllCookiesResult, error
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetAllCookiesResult Returns all browser cookies. Depending on the backend support, will return detailed cookie
-// information in the `cookies` field.
+// NetworkGetAllCookiesResult (deprecated) ...
 type NetworkGetAllCookiesResult struct {
-
 	// Cookies Array of cookie objects.
 	Cookies []*NetworkCookie `json:"cookies"`
 }
 
 // NetworkGetCertificate (experimental) Returns the DER-encoded certificate.
 type NetworkGetCertificate struct {
-
 	// Origin Origin to get certificate for.
 	Origin string `json:"origin"`
 }
@@ -1684,9 +1795,8 @@ func (m NetworkGetCertificate) Call(c Client) (*NetworkGetCertificateResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetCertificateResult (experimental) Returns the DER-encoded certificate.
+// NetworkGetCertificateResult (experimental) ...
 type NetworkGetCertificateResult struct {
-
 	// TableNames ...
 	TableNames []string `json:"tableNames"`
 }
@@ -1694,7 +1804,6 @@ type NetworkGetCertificateResult struct {
 // NetworkGetCookies Returns all browser cookies for the current URL. Depending on the backend support, will return
 // detailed cookie information in the `cookies` field.
 type NetworkGetCookies struct {
-
 	// Urls (optional) The list of URLs for which applicable cookies will be fetched.
 	// If not specified, it's assumed to be set to the list containing
 	// the URLs of the page and all of its subframes.
@@ -1710,17 +1819,14 @@ func (m NetworkGetCookies) Call(c Client) (*NetworkGetCookiesResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetCookiesResult Returns all browser cookies for the current URL. Depending on the backend support, will return
-// detailed cookie information in the `cookies` field.
+// NetworkGetCookiesResult ...
 type NetworkGetCookiesResult struct {
-
 	// Cookies Array of cookie objects.
 	Cookies []*NetworkCookie `json:"cookies"`
 }
 
 // NetworkGetResponseBody Returns content served for the given request.
 type NetworkGetResponseBody struct {
-
 	// RequestID Identifier of the network request to get content for.
 	RequestID NetworkRequestID `json:"requestId"`
 }
@@ -1734,9 +1840,8 @@ func (m NetworkGetResponseBody) Call(c Client) (*NetworkGetResponseBodyResult, e
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetResponseBodyResult Returns content served for the given request.
+// NetworkGetResponseBodyResult ...
 type NetworkGetResponseBodyResult struct {
-
 	// Body Response body.
 	Body string `json:"body"`
 
@@ -1746,7 +1851,6 @@ type NetworkGetResponseBodyResult struct {
 
 // NetworkGetRequestPostData Returns post data sent with the request. Returns an error when no data was sent with the request.
 type NetworkGetRequestPostData struct {
-
 	// RequestID Identifier of the network request to get content for.
 	RequestID NetworkRequestID `json:"requestId"`
 }
@@ -1760,16 +1864,14 @@ func (m NetworkGetRequestPostData) Call(c Client) (*NetworkGetRequestPostDataRes
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetRequestPostDataResult Returns post data sent with the request. Returns an error when no data was sent with the request.
+// NetworkGetRequestPostDataResult ...
 type NetworkGetRequestPostDataResult struct {
-
 	// PostData Request body string, omitting files from multipart requests
 	PostData string `json:"postData"`
 }
 
 // NetworkGetResponseBodyForInterception (experimental) Returns content served for the given currently intercepted request.
 type NetworkGetResponseBodyForInterception struct {
-
 	// InterceptionID Identifier for the intercepted request to get body for.
 	InterceptionID NetworkInterceptionID `json:"interceptionId"`
 }
@@ -1785,9 +1887,8 @@ func (m NetworkGetResponseBodyForInterception) Call(c Client) (*NetworkGetRespon
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetResponseBodyForInterceptionResult (experimental) Returns content served for the given currently intercepted request.
+// NetworkGetResponseBodyForInterceptionResult (experimental) ...
 type NetworkGetResponseBodyForInterceptionResult struct {
-
 	// Body Response body.
 	Body string `json:"body"`
 
@@ -1800,7 +1901,6 @@ type NetworkGetResponseBodyForInterceptionResult struct {
 // the response body. The stream only supports sequential read, IO.read will fail if the position
 // is specified.
 type NetworkTakeResponseBodyForInterceptionAsStream struct {
-
 	// InterceptionID ...
 	InterceptionID NetworkInterceptionID `json:"interceptionId"`
 }
@@ -1816,12 +1916,8 @@ func (m NetworkTakeResponseBodyForInterceptionAsStream) Call(c Client) (*Network
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkTakeResponseBodyForInterceptionAsStreamResult (experimental) Returns a handle to the stream representing the response body. Note that after this command,
-// the intercepted request can't be continued as is -- you either need to cancel it or to provide
-// the response body. The stream only supports sequential read, IO.read will fail if the position
-// is specified.
+// NetworkTakeResponseBodyForInterceptionAsStreamResult (experimental) ...
 type NetworkTakeResponseBodyForInterceptionAsStreamResult struct {
-
 	// Stream ...
 	Stream IOStreamHandle `json:"stream"`
 }
@@ -1830,7 +1926,6 @@ type NetworkTakeResponseBodyForInterceptionAsStreamResult struct {
 // parameters should be identical: method, url, async, request body, extra headers, withCredentials
 // attribute, user, password.
 type NetworkReplayXHR struct {
-
 	// RequestID Identifier of XHR to replay.
 	RequestID NetworkRequestID `json:"requestId"`
 }
@@ -1845,7 +1940,6 @@ func (m NetworkReplayXHR) Call(c Client) error {
 
 // NetworkSearchInResponseBody (experimental) Searches for given string in response content.
 type NetworkSearchInResponseBody struct {
-
 	// RequestID Identifier of the network response to search.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -1868,16 +1962,14 @@ func (m NetworkSearchInResponseBody) Call(c Client) (*NetworkSearchInResponseBod
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkSearchInResponseBodyResult (experimental) Searches for given string in response content.
+// NetworkSearchInResponseBodyResult (experimental) ...
 type NetworkSearchInResponseBodyResult struct {
-
 	// Result List of search matches.
 	Result []*DebuggerSearchMatch `json:"result"`
 }
 
 // NetworkSetBlockedURLs (experimental) Blocks URLs from loading.
 type NetworkSetBlockedURLs struct {
-
 	// Urls URL patterns to block. Wildcards ('*') are allowed.
 	Urls []string `json:"urls"`
 }
@@ -1892,7 +1984,6 @@ func (m NetworkSetBlockedURLs) Call(c Client) error {
 
 // NetworkSetBypassServiceWorker (experimental) Toggles ignoring of service worker for each request.
 type NetworkSetBypassServiceWorker struct {
-
 	// Bypass Bypass service worker and load from network.
 	Bypass bool `json:"bypass"`
 }
@@ -1907,7 +1998,6 @@ func (m NetworkSetBypassServiceWorker) Call(c Client) error {
 
 // NetworkSetCacheDisabled Toggles ignoring cache for each request. If `true`, cache will not be used.
 type NetworkSetCacheDisabled struct {
-
 	// CacheDisabled Cache disabled state.
 	CacheDisabled bool `json:"cacheDisabled"`
 }
@@ -1922,7 +2012,6 @@ func (m NetworkSetCacheDisabled) Call(c Client) error {
 
 // NetworkSetCookie Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.
 type NetworkSetCookie struct {
-
 	// Name Cookie name.
 	Name string `json:"name"`
 
@@ -1963,7 +2052,12 @@ type NetworkSetCookie struct {
 	// SourcePort (experimental) (optional) Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port.
 	// An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
 	// This is a temporary ability and it will be removed in the future.
-	SourcePort int `json:"sourcePort,omitempty"`
+	SourcePort *int `json:"sourcePort,omitempty"`
+
+	// PartitionKey (experimental) (optional) Cookie partition key. The site of the top-level URL the browser was visiting at the start
+	// of the request to the endpoint that set the cookie.
+	// If not set, the cookie will be set as not partitioned.
+	PartitionKey string `json:"partitionKey,omitempty"`
 }
 
 // ProtoReq name
@@ -1975,16 +2069,14 @@ func (m NetworkSetCookie) Call(c Client) (*NetworkSetCookieResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkSetCookieResult Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.
+// NetworkSetCookieResult ...
 type NetworkSetCookieResult struct {
-
 	// Success (deprecated) Always set to true. If an error occurs, the response indicates protocol error.
 	Success bool `json:"success"`
 }
 
 // NetworkSetCookies Sets given cookies.
 type NetworkSetCookies struct {
-
 	// Cookies Cookies to be set.
 	Cookies []*NetworkCookieParam `json:"cookies"`
 }
@@ -1999,7 +2091,6 @@ func (m NetworkSetCookies) Call(c Client) error {
 
 // NetworkSetExtraHTTPHeaders Specifies whether to always send extra HTTP headers with the requests from this page.
 type NetworkSetExtraHTTPHeaders struct {
-
 	// Headers Map with extra HTTP headers.
 	Headers NetworkHeaders `json:"headers"`
 }
@@ -2014,7 +2105,6 @@ func (m NetworkSetExtraHTTPHeaders) Call(c Client) error {
 
 // NetworkSetAttachDebugStack (experimental) Specifies whether to attach a page script stack id in requests
 type NetworkSetAttachDebugStack struct {
-
 	// Enabled Whether to attach a page script stack for debugging purpose.
 	Enabled bool `json:"enabled"`
 }
@@ -2030,7 +2120,6 @@ func (m NetworkSetAttachDebugStack) Call(c Client) error {
 // NetworkSetRequestInterception (deprecated) (experimental) Sets the requests to intercept that match the provided patterns and optionally resource types.
 // Deprecated, please use Fetch.enable instead.
 type NetworkSetRequestInterception struct {
-
 	// Patterns Requests matching any of these patterns will be forwarded and wait for the corresponding
 	// continueInterceptedRequest call.
 	Patterns []*NetworkRequestPattern `json:"patterns"`
@@ -2046,7 +2135,6 @@ func (m NetworkSetRequestInterception) Call(c Client) error {
 
 // NetworkSetUserAgentOverride Allows overriding user agent with the given string.
 type NetworkSetUserAgentOverride struct {
-
 	// UserAgent User agent to use.
 	UserAgent string `json:"userAgent"`
 
@@ -2070,7 +2158,6 @@ func (m NetworkSetUserAgentOverride) Call(c Client) error {
 
 // NetworkGetSecurityIsolationStatus (experimental) Returns information about the COEP/COOP isolation status.
 type NetworkGetSecurityIsolationStatus struct {
-
 	// FrameID (optional) If no frameId is provided, the status of the target is provided.
 	FrameID PageFrameID `json:"frameId,omitempty"`
 }
@@ -2086,18 +2173,32 @@ func (m NetworkGetSecurityIsolationStatus) Call(c Client) (*NetworkGetSecurityIs
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkGetSecurityIsolationStatusResult (experimental) Returns information about the COEP/COOP isolation status.
+// NetworkGetSecurityIsolationStatusResult (experimental) ...
 type NetworkGetSecurityIsolationStatusResult struct {
-
 	// Status ...
 	Status *NetworkSecurityIsolationStatus `json:"status"`
 }
 
+// NetworkEnableReportingAPI (experimental) Enables tracking for the Reporting API, events generated by the Reporting API will now be delivered to the client.
+// Enabling triggers 'reportingApiReportAdded' for all existing reports.
+type NetworkEnableReportingAPI struct {
+	// Enable Whether to enable or disable events for the Reporting API
+	Enable bool `json:"enable"`
+}
+
+// ProtoReq name
+func (m NetworkEnableReportingAPI) ProtoReq() string { return "Network.enableReportingApi" }
+
+// Call sends the request
+func (m NetworkEnableReportingAPI) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
 // NetworkLoadNetworkResource (experimental) Fetches the resource and returns the content.
 type NetworkLoadNetworkResource struct {
-
-	// FrameID Frame id to get the resource for.
-	FrameID PageFrameID `json:"frameId"`
+	// FrameID (optional) Frame id to get the resource for. Mandatory for frame targets, and
+	// should be omitted for worker targets.
+	FrameID PageFrameID `json:"frameId,omitempty"`
 
 	// URL URL of the resource to get content for.
 	URL string `json:"url"`
@@ -2115,16 +2216,14 @@ func (m NetworkLoadNetworkResource) Call(c Client) (*NetworkLoadNetworkResourceR
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// NetworkLoadNetworkResourceResult (experimental) Fetches the resource and returns the content.
+// NetworkLoadNetworkResourceResult (experimental) ...
 type NetworkLoadNetworkResourceResult struct {
-
 	// Resource ...
 	Resource *NetworkLoadNetworkResourcePageResult `json:"resource"`
 }
 
 // NetworkDataReceived Fired when data chunk was received over the network.
 type NetworkDataReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2145,7 +2244,6 @@ func (evt NetworkDataReceived) ProtoEvent() string {
 
 // NetworkEventSourceMessageReceived Fired when EventSource message is received.
 type NetworkEventSourceMessageReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2169,7 +2267,6 @@ func (evt NetworkEventSourceMessageReceived) ProtoEvent() string {
 
 // NetworkLoadingFailed Fired when HTTP request has failed to load.
 type NetworkLoadingFailed struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2199,7 +2296,6 @@ func (evt NetworkLoadingFailed) ProtoEvent() string {
 
 // NetworkLoadingFinished Fired when HTTP request has finished loading.
 type NetworkLoadingFinished struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2223,7 +2319,6 @@ func (evt NetworkLoadingFinished) ProtoEvent() string {
 // mocked.
 // Deprecated, use Fetch.requestPaused instead.
 type NetworkRequestIntercepted struct {
-
 	// InterceptionID Each request the page makes will have a unique id, however if any redirects are encountered
 	// while processing that fetch, they will be reported with the same id as the original fetch.
 	// Likewise if HTTP authentication is needed then the same fetch id will be used.
@@ -2258,7 +2353,7 @@ type NetworkRequestIntercepted struct {
 
 	// ResponseStatusCode (optional) Response code if intercepted at response stage or if redirect occurred while intercepting
 	// request or auth retry occurred.
-	ResponseStatusCode int `json:"responseStatusCode,omitempty"`
+	ResponseStatusCode *int `json:"responseStatusCode,omitempty"`
 
 	// ResponseHeaders (optional) Response headers if intercepted at the response stage or if redirect occurred while
 	// intercepting request or auth retry occurred.
@@ -2276,7 +2371,6 @@ func (evt NetworkRequestIntercepted) ProtoEvent() string {
 
 // NetworkRequestServedFromCache Fired if request ended up loading from cache.
 type NetworkRequestServedFromCache struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 }
@@ -2288,7 +2382,6 @@ func (evt NetworkRequestServedFromCache) ProtoEvent() string {
 
 // NetworkRequestWillBeSent Fired when page is about to send HTTP request.
 type NetworkRequestWillBeSent struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2310,6 +2403,11 @@ type NetworkRequestWillBeSent struct {
 	// Initiator Request initiator.
 	Initiator *NetworkInitiator `json:"initiator"`
 
+	// RedirectHasExtraInfo (experimental) In the case that redirectResponse is populated, this flag indicates whether
+	// requestWillBeSentExtraInfo and responseReceivedExtraInfo events will be or were emitted
+	// for the request which was just redirected.
+	RedirectHasExtraInfo bool `json:"redirectHasExtraInfo"`
+
 	// RedirectResponse (optional) Redirect response data.
 	RedirectResponse *NetworkResponse `json:"redirectResponse,omitempty"`
 
@@ -2330,7 +2428,6 @@ func (evt NetworkRequestWillBeSent) ProtoEvent() string {
 
 // NetworkResourceChangedPriority (experimental) Fired when resource loading priority is changed
 type NetworkResourceChangedPriority struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2348,7 +2445,6 @@ func (evt NetworkResourceChangedPriority) ProtoEvent() string {
 
 // NetworkSignedExchangeReceived (experimental) Fired when a signed exchange was received over the network
 type NetworkSignedExchangeReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2363,7 +2459,6 @@ func (evt NetworkSignedExchangeReceived) ProtoEvent() string {
 
 // NetworkResponseReceived Fired when HTTP response is available.
 type NetworkResponseReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2379,6 +2474,10 @@ type NetworkResponseReceived struct {
 	// Response Response data.
 	Response *NetworkResponse `json:"response"`
 
+	// HasExtraInfo (experimental) Indicates whether requestWillBeSentExtraInfo and responseReceivedExtraInfo events will be
+	// or were emitted for this request.
+	HasExtraInfo bool `json:"hasExtraInfo"`
+
 	// FrameID (optional) Frame identifier.
 	FrameID PageFrameID `json:"frameId,omitempty"`
 }
@@ -2390,7 +2489,6 @@ func (evt NetworkResponseReceived) ProtoEvent() string {
 
 // NetworkWebSocketClosed Fired when WebSocket is closed.
 type NetworkWebSocketClosed struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2405,7 +2503,6 @@ func (evt NetworkWebSocketClosed) ProtoEvent() string {
 
 // NetworkWebSocketCreated Fired upon WebSocket creation.
 type NetworkWebSocketCreated struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2423,7 +2520,6 @@ func (evt NetworkWebSocketCreated) ProtoEvent() string {
 
 // NetworkWebSocketFrameError Fired when WebSocket message error occurs.
 type NetworkWebSocketFrameError struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2441,7 +2537,6 @@ func (evt NetworkWebSocketFrameError) ProtoEvent() string {
 
 // NetworkWebSocketFrameReceived Fired when WebSocket message is received.
 type NetworkWebSocketFrameReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2459,7 +2554,6 @@ func (evt NetworkWebSocketFrameReceived) ProtoEvent() string {
 
 // NetworkWebSocketFrameSent Fired when WebSocket message is sent.
 type NetworkWebSocketFrameSent struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2477,7 +2571,6 @@ func (evt NetworkWebSocketFrameSent) ProtoEvent() string {
 
 // NetworkWebSocketHandshakeResponseReceived Fired when WebSocket handshake response becomes available.
 type NetworkWebSocketHandshakeResponseReceived struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2495,7 +2588,6 @@ func (evt NetworkWebSocketHandshakeResponseReceived) ProtoEvent() string {
 
 // NetworkWebSocketWillSendHandshakeRequest Fired when WebSocket is about to initiate handshake.
 type NetworkWebSocketWillSendHandshakeRequest struct {
-
 	// RequestID Request identifier.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2516,7 +2608,6 @@ func (evt NetworkWebSocketWillSendHandshakeRequest) ProtoEvent() string {
 
 // NetworkWebTransportCreated Fired upon WebTransport creation.
 type NetworkWebTransportCreated struct {
-
 	// TransportID WebTransport identifier.
 	TransportID NetworkRequestID `json:"transportId"`
 
@@ -2537,7 +2628,6 @@ func (evt NetworkWebTransportCreated) ProtoEvent() string {
 
 // NetworkWebTransportConnectionEstablished Fired when WebTransport handshake is finished.
 type NetworkWebTransportConnectionEstablished struct {
-
 	// TransportID WebTransport identifier.
 	TransportID NetworkRequestID `json:"transportId"`
 
@@ -2552,7 +2642,6 @@ func (evt NetworkWebTransportConnectionEstablished) ProtoEvent() string {
 
 // NetworkWebTransportClosed Fired when WebTransport is disposed.
 type NetworkWebTransportClosed struct {
-
 	// TransportID WebTransport identifier.
 	TransportID NetworkRequestID `json:"transportId"`
 
@@ -2570,7 +2659,6 @@ func (evt NetworkWebTransportClosed) ProtoEvent() string {
 // requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
 // or requestWillBeSentExtraInfo will be fired first for the same request.
 type NetworkRequestWillBeSentExtraInfo struct {
-
 	// RequestID Request identifier. Used to match this information to an existing requestWillBeSent event.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2581,8 +2669,14 @@ type NetworkRequestWillBeSentExtraInfo struct {
 	// Headers Raw request headers as they will be sent over the wire.
 	Headers NetworkHeaders `json:"headers"`
 
+	// ConnectTiming (experimental) Connection timing information for the request.
+	ConnectTiming *NetworkConnectTiming `json:"connectTiming"`
+
 	// ClientSecurityState (optional) The client security state set for the request.
 	ClientSecurityState *NetworkClientSecurityState `json:"clientSecurityState,omitempty"`
+
+	// SiteHasCookieInOtherPartition (optional) Whether the site has partitioned cookies stored in a partition different than the current one.
+	SiteHasCookieInOtherPartition bool `json:"siteHasCookieInOtherPartition,omitempty"`
 }
 
 // ProtoEvent name
@@ -2594,7 +2688,6 @@ func (evt NetworkRequestWillBeSentExtraInfo) ProtoEvent() string {
 // stack. Not every responseReceived event will have an additional responseReceivedExtraInfo for
 // it, and responseReceivedExtraInfo may be fired before or after responseReceived.
 type NetworkResponseReceivedExtraInfo struct {
-
 	// RequestID Request identifier. Used to match this information to another responseReceived event.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2610,9 +2703,21 @@ type NetworkResponseReceivedExtraInfo struct {
 	// established the connection, so we can't send it in `requestWillBeSentExtraInfo`.
 	ResourceIPAddressSpace NetworkIPAddressSpace `json:"resourceIPAddressSpace"`
 
+	// StatusCode The status code of the response. This is useful in cases the request failed and no responseReceived
+	// event is triggered, which is the case for, e.g., CORS errors. This is also the correct status code
+	// for cached requests, where the status in responseReceived is a 200 and this will be 304.
+	StatusCode int `json:"statusCode"`
+
 	// HeadersText (optional) Raw response header text as it was received over the wire. The raw text may not always be
 	// available, such as in the case of HTTP/2 or QUIC.
 	HeadersText string `json:"headersText,omitempty"`
+
+	// CookiePartitionKey (optional) The cookie partition key that will be used to store partitioned cookies set in this response.
+	// Only sent when partitioned cookies are enabled.
+	CookiePartitionKey string `json:"cookiePartitionKey,omitempty"`
+
+	// CookiePartitionKeyOpaque (optional) True if partitioned cookies are enabled, but the partition key is not serializeable to string.
+	CookiePartitionKeyOpaque bool `json:"cookiePartitionKeyOpaque,omitempty"`
 }
 
 // ProtoEvent name
@@ -2642,6 +2747,9 @@ const (
 	// NetworkTrustTokenOperationDoneStatusUnavailable enum const
 	NetworkTrustTokenOperationDoneStatusUnavailable NetworkTrustTokenOperationDoneStatus = "Unavailable"
 
+	// NetworkTrustTokenOperationDoneStatusUnauthorized enum const
+	NetworkTrustTokenOperationDoneStatusUnauthorized NetworkTrustTokenOperationDoneStatus = "Unauthorized"
+
 	// NetworkTrustTokenOperationDoneStatusBadResponse enum const
 	NetworkTrustTokenOperationDoneStatusBadResponse NetworkTrustTokenOperationDoneStatus = "BadResponse"
 
@@ -2660,7 +2768,6 @@ const (
 // failed, the event is fired before the corresponding request was sent
 // or after the response was received.
 type NetworkTrustTokenOperationDone struct {
-
 	// Status Detailed success or error status of the operation.
 	// 'AlreadyExists' also signifies a successful operation, as the result
 	// of the operation already exists und thus, the operation was abort
@@ -2680,7 +2787,7 @@ type NetworkTrustTokenOperationDone struct {
 	IssuerOrigin string `json:"issuerOrigin,omitempty"`
 
 	// IssuedTokenCount (optional) The number of obtained Trust Tokens on a successful "Issuance" operation.
-	IssuedTokenCount int `json:"issuedTokenCount,omitempty"`
+	IssuedTokenCount *int `json:"issuedTokenCount,omitempty"`
 }
 
 // ProtoEvent name
@@ -2691,7 +2798,6 @@ func (evt NetworkTrustTokenOperationDone) ProtoEvent() string {
 // NetworkSubresourceWebBundleMetadataReceived (experimental) Fired once when parsing the .wbn file has succeeded.
 // The event contains the information about the web bundle contents.
 type NetworkSubresourceWebBundleMetadataReceived struct {
-
 	// RequestID Request identifier. Used to match this information to another event.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2706,7 +2812,6 @@ func (evt NetworkSubresourceWebBundleMetadataReceived) ProtoEvent() string {
 
 // NetworkSubresourceWebBundleMetadataError (experimental) Fired once when parsing the .wbn file has failed.
 type NetworkSubresourceWebBundleMetadataError struct {
-
 	// RequestID Request identifier. Used to match this information to another event.
 	RequestID NetworkRequestID `json:"requestId"`
 
@@ -2722,7 +2827,6 @@ func (evt NetworkSubresourceWebBundleMetadataError) ProtoEvent() string {
 // NetworkSubresourceWebBundleInnerResponseParsed (experimental) Fired when handling requests for resources within a .wbn file.
 // Note: this will only be fired for resources that are requested by the webpage.
 type NetworkSubresourceWebBundleInnerResponseParsed struct {
-
 	// InnerRequestID Request identifier of the subresource request
 	InnerRequestID NetworkRequestID `json:"innerRequestId"`
 
@@ -2742,7 +2846,6 @@ func (evt NetworkSubresourceWebBundleInnerResponseParsed) ProtoEvent() string {
 
 // NetworkSubresourceWebBundleInnerResponseError (experimental) Fired when request for resources within a .wbn file failed.
 type NetworkSubresourceWebBundleInnerResponseError struct {
-
 	// InnerRequestID Request identifier of the subresource request
 	InnerRequestID NetworkRequestID `json:"innerRequestId"`
 
@@ -2761,4 +2864,41 @@ type NetworkSubresourceWebBundleInnerResponseError struct {
 // ProtoEvent name
 func (evt NetworkSubresourceWebBundleInnerResponseError) ProtoEvent() string {
 	return "Network.subresourceWebBundleInnerResponseError"
+}
+
+// NetworkReportingAPIReportAdded (experimental) Is sent whenever a new report is added.
+// And after 'enableReportingApi' for all existing reports.
+type NetworkReportingAPIReportAdded struct {
+	// Report ...
+	Report *NetworkReportingAPIReport `json:"report"`
+}
+
+// ProtoEvent name
+func (evt NetworkReportingAPIReportAdded) ProtoEvent() string {
+	return "Network.reportingApiReportAdded"
+}
+
+// NetworkReportingAPIReportUpdated (experimental) ...
+type NetworkReportingAPIReportUpdated struct {
+	// Report ...
+	Report *NetworkReportingAPIReport `json:"report"`
+}
+
+// ProtoEvent name
+func (evt NetworkReportingAPIReportUpdated) ProtoEvent() string {
+	return "Network.reportingApiReportUpdated"
+}
+
+// NetworkReportingAPIEndpointsChangedForOrigin (experimental) ...
+type NetworkReportingAPIEndpointsChangedForOrigin struct {
+	// Origin Origin of the document(s) which configured the endpoints.
+	Origin string `json:"origin"`
+
+	// Endpoints ...
+	Endpoints []*NetworkReportingAPIEndpoint `json:"endpoints"`
+}
+
+// ProtoEvent name
+func (evt NetworkReportingAPIEndpointsChangedForOrigin) ProtoEvent() string {
+	return "Network.reportingApiEndpointsChangedForOrigin"
 }

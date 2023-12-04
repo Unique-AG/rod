@@ -29,7 +29,6 @@ type DOMBackendNodeID int
 
 // DOMBackendNode Backend node with a friendly name.
 type DOMBackendNode struct {
-
 	// NodeType `Node`'s nodeType.
 	NodeType int `json:"nodeType"`
 
@@ -103,6 +102,21 @@ const (
 
 	// DOMPseudoTypeInputListButton enum const
 	DOMPseudoTypeInputListButton DOMPseudoType = "input-list-button"
+
+	// DOMPseudoTypeViewTransition enum const
+	DOMPseudoTypeViewTransition DOMPseudoType = "view-transition"
+
+	// DOMPseudoTypeViewTransitionGroup enum const
+	DOMPseudoTypeViewTransitionGroup DOMPseudoType = "view-transition-group"
+
+	// DOMPseudoTypeViewTransitionImagePair enum const
+	DOMPseudoTypeViewTransitionImagePair DOMPseudoType = "view-transition-image-pair"
+
+	// DOMPseudoTypeViewTransitionOld enum const
+	DOMPseudoTypeViewTransitionOld DOMPseudoType = "view-transition-old"
+
+	// DOMPseudoTypeViewTransitionNew enum const
+	DOMPseudoTypeViewTransitionNew DOMPseudoType = "view-transition-new"
 )
 
 // DOMShadowRootType Shadow root type.
@@ -133,10 +147,37 @@ const (
 	DOMCompatibilityModeNoQuirksMode DOMCompatibilityMode = "NoQuirksMode"
 )
 
+// DOMPhysicalAxes ContainerSelector physical axes
+type DOMPhysicalAxes string
+
+const (
+	// DOMPhysicalAxesHorizontal enum const
+	DOMPhysicalAxesHorizontal DOMPhysicalAxes = "Horizontal"
+
+	// DOMPhysicalAxesVertical enum const
+	DOMPhysicalAxesVertical DOMPhysicalAxes = "Vertical"
+
+	// DOMPhysicalAxesBoth enum const
+	DOMPhysicalAxesBoth DOMPhysicalAxes = "Both"
+)
+
+// DOMLogicalAxes ContainerSelector logical axes
+type DOMLogicalAxes string
+
+const (
+	// DOMLogicalAxesInline enum const
+	DOMLogicalAxesInline DOMLogicalAxes = "Inline"
+
+	// DOMLogicalAxesBlock enum const
+	DOMLogicalAxesBlock DOMLogicalAxes = "Block"
+
+	// DOMLogicalAxesBoth enum const
+	DOMLogicalAxesBoth DOMLogicalAxes = "Both"
+)
+
 // DOMNode DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes.
 // DOMNode is a base node mirror type.
 type DOMNode struct {
-
 	// NodeID Node identifier that is passed into the rest of the DOM messages as the `nodeId`. Backend
 	// will only push node with given `id` once. It is aware of all requested nodes and will only
 	// fire DOM events for nodes known to the client.
@@ -161,7 +202,7 @@ type DOMNode struct {
 	NodeValue string `json:"nodeValue"`
 
 	// ChildNodeCount (optional) Child count for `Container` nodes.
-	ChildNodeCount int `json:"childNodeCount,omitempty"`
+	ChildNodeCount *int `json:"childNodeCount,omitempty"`
 
 	// Children (optional) Child nodes of this node when requested with children.
 	Children []*DOMNode `json:"children,omitempty"`
@@ -196,6 +237,10 @@ type DOMNode struct {
 	// PseudoType (optional) Pseudo element type for this node.
 	PseudoType DOMPseudoType `json:"pseudoType,omitempty"`
 
+	// PseudoIdentifier (optional) Pseudo element identifier for this node. Only present if there is a
+	// valid pseudoType.
+	PseudoIdentifier string `json:"pseudoIdentifier,omitempty"`
+
 	// ShadowRootType (optional) Shadow root type.
 	ShadowRootType DOMShadowRootType `json:"shadowRootType,omitempty"`
 
@@ -227,11 +272,13 @@ type DOMNode struct {
 
 	// CompatibilityMode (optional) ...
 	CompatibilityMode DOMCompatibilityMode `json:"compatibilityMode,omitempty"`
+
+	// AssignedSlot (optional) ...
+	AssignedSlot *DOMBackendNode `json:"assignedSlot,omitempty"`
 }
 
 // DOMRGBA A structure holding an RGBA color.
 type DOMRGBA struct {
-
 	// R The red component, in the [0-255] range.
 	R int `json:"r"`
 
@@ -242,7 +289,7 @@ type DOMRGBA struct {
 	B int `json:"b"`
 
 	// A (optional) The alpha component, in the [0-1] range (default: 1).
-	A float64 `json:"a,omitempty"`
+	A *float64 `json:"a,omitempty"`
 }
 
 // DOMQuad An array of quad vertices, x immediately followed by y for each point, points clock-wise.
@@ -250,7 +297,6 @@ type DOMQuad []float64
 
 // DOMBoxModel Box model.
 type DOMBoxModel struct {
-
 	// Content Content box
 	Content DOMQuad `json:"content"`
 
@@ -275,7 +321,6 @@ type DOMBoxModel struct {
 
 // DOMShapeOutsideInfo CSS Shape Outside details.
 type DOMShapeOutsideInfo struct {
-
 	// Bounds Shape bounds
 	Bounds DOMQuad `json:"bounds"`
 
@@ -288,7 +333,6 @@ type DOMShapeOutsideInfo struct {
 
 // DOMRect Rectangle.
 type DOMRect struct {
-
 	// X X coordinate
 	X float64 `json:"x"`
 
@@ -304,7 +348,6 @@ type DOMRect struct {
 
 // DOMCSSComputedStyleProperty ...
 type DOMCSSComputedStyleProperty struct {
-
 	// Name Computed style property name.
 	Name string `json:"name"`
 
@@ -314,7 +357,6 @@ type DOMCSSComputedStyleProperty struct {
 
 // DOMCollectClassNamesFromSubtree (experimental) Collects class names for the node with given id and all of it's child nodes.
 type DOMCollectClassNamesFromSubtree struct {
-
 	// NodeID Id of the node to collect class names.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -328,9 +370,8 @@ func (m DOMCollectClassNamesFromSubtree) Call(c Client) (*DOMCollectClassNamesFr
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMCollectClassNamesFromSubtreeResult (experimental) Collects class names for the node with given id and all of it's child nodes.
+// DOMCollectClassNamesFromSubtreeResult (experimental) ...
 type DOMCollectClassNamesFromSubtreeResult struct {
-
 	// ClassNames Class name list.
 	ClassNames []string `json:"classNames"`
 }
@@ -338,7 +379,6 @@ type DOMCollectClassNamesFromSubtreeResult struct {
 // DOMCopyTo (experimental) Creates a deep copy of the specified node and places it into the target container before the
 // given anchor.
 type DOMCopyTo struct {
-
 	// NodeID Id of the node to copy.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -359,10 +399,8 @@ func (m DOMCopyTo) Call(c Client) (*DOMCopyToResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMCopyToResult (experimental) Creates a deep copy of the specified node and places it into the target container before the
-// given anchor.
+// DOMCopyToResult (experimental) ...
 type DOMCopyToResult struct {
-
 	// NodeID Id of the node clone.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -370,7 +408,6 @@ type DOMCopyToResult struct {
 // DOMDescribeNode Describes node given its id, does not require domain to be enabled. Does not start tracking any
 // objects, can be used for automation.
 type DOMDescribeNode struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -382,7 +419,7 @@ type DOMDescribeNode struct {
 
 	// Depth (optional) The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
 	// entire subtree or provide an integer larger than 0.
-	Depth int `json:"depth,omitempty"`
+	Depth *int `json:"depth,omitempty"`
 
 	// Pierce (optional) Whether or not iframes and shadow roots should be traversed when returning the subtree
 	// (default is false).
@@ -398,10 +435,8 @@ func (m DOMDescribeNode) Call(c Client) (*DOMDescribeNodeResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMDescribeNodeResult Describes node given its id, does not require domain to be enabled. Does not start tracking any
-// objects, can be used for automation.
+// DOMDescribeNodeResult ...
 type DOMDescribeNodeResult struct {
-
 	// Node Node description.
 	Node *DOMNode `json:"node"`
 }
@@ -410,7 +445,6 @@ type DOMDescribeNodeResult struct {
 // Note: exactly one between nodeId, backendNodeId and objectId should be passed
 // to identify the node.
 type DOMScrollIntoViewIfNeeded struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -434,8 +468,7 @@ func (m DOMScrollIntoViewIfNeeded) Call(c Client) error {
 }
 
 // DOMDisable Disables DOM agent for the given page.
-type DOMDisable struct {
-}
+type DOMDisable struct{}
 
 // ProtoReq name
 func (m DOMDisable) ProtoReq() string { return "DOM.disable" }
@@ -448,7 +481,6 @@ func (m DOMDisable) Call(c Client) error {
 // DOMDiscardSearchResults (experimental) Discards search results from the session with the given id. `getSearchResults` should no longer
 // be called for that search.
 type DOMDiscardSearchResults struct {
-
 	// SearchID Unique search session identifier.
 	SearchID string `json:"searchId"`
 }
@@ -461,8 +493,21 @@ func (m DOMDiscardSearchResults) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
+// DOMEnableIncludeWhitespace enum
+type DOMEnableIncludeWhitespace string
+
+const (
+	// DOMEnableIncludeWhitespaceNone enum const
+	DOMEnableIncludeWhitespaceNone DOMEnableIncludeWhitespace = "none"
+
+	// DOMEnableIncludeWhitespaceAll enum const
+	DOMEnableIncludeWhitespaceAll DOMEnableIncludeWhitespace = "all"
+)
+
 // DOMEnable Enables DOM agent for the given page.
 type DOMEnable struct {
+	// IncludeWhitespace (experimental) (optional) Whether to include whitespaces in the children array of returned Nodes.
+	IncludeWhitespace DOMEnableIncludeWhitespace `json:"includeWhitespace,omitempty"`
 }
 
 // ProtoReq name
@@ -475,7 +520,6 @@ func (m DOMEnable) Call(c Client) error {
 
 // DOMFocus Focuses the given element.
 type DOMFocus struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -496,7 +540,6 @@ func (m DOMFocus) Call(c Client) error {
 
 // DOMGetAttributes Returns attributes for the specified node.
 type DOMGetAttributes struct {
-
 	// NodeID Id of the node to retrieve attibutes for.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -510,16 +553,14 @@ func (m DOMGetAttributes) Call(c Client) (*DOMGetAttributesResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetAttributesResult Returns attributes for the specified node.
+// DOMGetAttributesResult ...
 type DOMGetAttributesResult struct {
-
 	// Attributes An interleaved array of node attribute names and values.
 	Attributes []string `json:"attributes"`
 }
 
 // DOMGetBoxModel Returns boxes for the given node.
 type DOMGetBoxModel struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -539,9 +580,8 @@ func (m DOMGetBoxModel) Call(c Client) (*DOMGetBoxModelResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetBoxModelResult Returns boxes for the given node.
+// DOMGetBoxModelResult ...
 type DOMGetBoxModelResult struct {
-
 	// Model Box model for the node.
 	Model *DOMBoxModel `json:"model"`
 }
@@ -549,7 +589,6 @@ type DOMGetBoxModelResult struct {
 // DOMGetContentQuads (experimental) Returns quads that describe node position on the page. This method
 // might return multiple quads for inline nodes.
 type DOMGetContentQuads struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -569,20 +608,18 @@ func (m DOMGetContentQuads) Call(c Client) (*DOMGetContentQuadsResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetContentQuadsResult (experimental) Returns quads that describe node position on the page. This method
-// might return multiple quads for inline nodes.
+// DOMGetContentQuadsResult (experimental) ...
 type DOMGetContentQuadsResult struct {
-
 	// Quads Quads that describe node layout relative to viewport.
 	Quads []DOMQuad `json:"quads"`
 }
 
 // DOMGetDocument Returns the root DOM node (and optionally the subtree) to the caller.
+// Implicitly enables the DOM domain events for the current target.
 type DOMGetDocument struct {
-
 	// Depth (optional) The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
 	// entire subtree or provide an integer larger than 0.
-	Depth int `json:"depth,omitempty"`
+	Depth *int `json:"depth,omitempty"`
 
 	// Pierce (optional) Whether or not iframes and shadow roots should be traversed when returning the subtree
 	// (default is false).
@@ -598,9 +635,8 @@ func (m DOMGetDocument) Call(c Client) (*DOMGetDocumentResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetDocumentResult Returns the root DOM node (and optionally the subtree) to the caller.
+// DOMGetDocumentResult ...
 type DOMGetDocumentResult struct {
-
 	// Root Resulting node.
 	Root *DOMNode `json:"root"`
 }
@@ -609,10 +645,9 @@ type DOMGetDocumentResult struct {
 // Deprecated, as it is not designed to work well with the rest of the DOM agent.
 // Use DOMSnapshot.captureSnapshot instead.
 type DOMGetFlattenedDocument struct {
-
 	// Depth (optional) The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
 	// entire subtree or provide an integer larger than 0.
-	Depth int `json:"depth,omitempty"`
+	Depth *int `json:"depth,omitempty"`
 
 	// Pierce (optional) Whether or not iframes and shadow roots should be traversed when returning the subtree
 	// (default is false).
@@ -628,18 +663,14 @@ func (m DOMGetFlattenedDocument) Call(c Client) (*DOMGetFlattenedDocumentResult,
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetFlattenedDocumentResult (deprecated) Returns the root DOM node (and optionally the subtree) to the caller.
-// Deprecated, as it is not designed to work well with the rest of the DOM agent.
-// Use DOMSnapshot.captureSnapshot instead.
+// DOMGetFlattenedDocumentResult (deprecated) ...
 type DOMGetFlattenedDocumentResult struct {
-
 	// Nodes Resulting node.
 	Nodes []*DOMNode `json:"nodes"`
 }
 
 // DOMGetNodesForSubtreeByStyle (experimental) Finds nodes with a given computed style in a subtree.
 type DOMGetNodesForSubtreeByStyle struct {
-
 	// NodeID Node ID pointing to the root of a subtree.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -660,9 +691,8 @@ func (m DOMGetNodesForSubtreeByStyle) Call(c Client) (*DOMGetNodesForSubtreeBySt
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetNodesForSubtreeByStyleResult (experimental) Finds nodes with a given computed style in a subtree.
+// DOMGetNodesForSubtreeByStyleResult (experimental) ...
 type DOMGetNodesForSubtreeByStyleResult struct {
-
 	// NodeIds Resulting nodes.
 	NodeIds []DOMNodeID `json:"nodeIds"`
 }
@@ -670,7 +700,6 @@ type DOMGetNodesForSubtreeByStyleResult struct {
 // DOMGetNodeForLocation Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
 // either returned or not.
 type DOMGetNodeForLocation struct {
-
 	// X X coordinate.
 	X int `json:"x"`
 
@@ -693,10 +722,8 @@ func (m DOMGetNodeForLocation) Call(c Client) (*DOMGetNodeForLocationResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetNodeForLocationResult Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
-// either returned or not.
+// DOMGetNodeForLocationResult ...
 type DOMGetNodeForLocationResult struct {
-
 	// BackendNodeID Resulting node.
 	BackendNodeID DOMBackendNodeID `json:"backendNodeId"`
 
@@ -709,7 +736,6 @@ type DOMGetNodeForLocationResult struct {
 
 // DOMGetOuterHTML Returns node's HTML markup.
 type DOMGetOuterHTML struct {
-
 	// NodeID (optional) Identifier of the node.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -729,16 +755,14 @@ func (m DOMGetOuterHTML) Call(c Client) (*DOMGetOuterHTMLResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetOuterHTMLResult Returns node's HTML markup.
+// DOMGetOuterHTMLResult ...
 type DOMGetOuterHTMLResult struct {
-
 	// OuterHTML Outer HTML markup.
 	OuterHTML string `json:"outerHTML"`
 }
 
 // DOMGetRelayoutBoundary (experimental) Returns the id of the nearest ancestor that is a relayout boundary.
 type DOMGetRelayoutBoundary struct {
-
 	// NodeID Id of the node.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -752,9 +776,8 @@ func (m DOMGetRelayoutBoundary) Call(c Client) (*DOMGetRelayoutBoundaryResult, e
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetRelayoutBoundaryResult (experimental) Returns the id of the nearest ancestor that is a relayout boundary.
+// DOMGetRelayoutBoundaryResult (experimental) ...
 type DOMGetRelayoutBoundaryResult struct {
-
 	// NodeID Relayout boundary node id for the given node.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -762,7 +785,6 @@ type DOMGetRelayoutBoundaryResult struct {
 // DOMGetSearchResults (experimental) Returns search results from given `fromIndex` to given `toIndex` from the search with the given
 // identifier.
 type DOMGetSearchResults struct {
-
 	// SearchID Unique search session identifier.
 	SearchID string `json:"searchId"`
 
@@ -782,17 +804,14 @@ func (m DOMGetSearchResults) Call(c Client) (*DOMGetSearchResultsResult, error) 
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetSearchResultsResult (experimental) Returns search results from given `fromIndex` to given `toIndex` from the search with the given
-// identifier.
+// DOMGetSearchResultsResult (experimental) ...
 type DOMGetSearchResultsResult struct {
-
 	// NodeIds Ids of the search result nodes.
 	NodeIds []DOMNodeID `json:"nodeIds"`
 }
 
 // DOMHideHighlight Hides any highlight.
-type DOMHideHighlight struct {
-}
+type DOMHideHighlight struct{}
 
 // ProtoReq name
 func (m DOMHideHighlight) ProtoReq() string { return "DOM.hideHighlight" }
@@ -803,8 +822,7 @@ func (m DOMHideHighlight) Call(c Client) error {
 }
 
 // DOMHighlightNode Highlights DOM node.
-type DOMHighlightNode struct {
-}
+type DOMHighlightNode struct{}
 
 // ProtoReq name
 func (m DOMHighlightNode) ProtoReq() string { return "DOM.highlightNode" }
@@ -815,8 +833,7 @@ func (m DOMHighlightNode) Call(c Client) error {
 }
 
 // DOMHighlightRect Highlights given rectangle.
-type DOMHighlightRect struct {
-}
+type DOMHighlightRect struct{}
 
 // ProtoReq name
 func (m DOMHighlightRect) ProtoReq() string { return "DOM.highlightRect" }
@@ -827,8 +844,7 @@ func (m DOMHighlightRect) Call(c Client) error {
 }
 
 // DOMMarkUndoableState (experimental) Marks last undoable state.
-type DOMMarkUndoableState struct {
-}
+type DOMMarkUndoableState struct{}
 
 // ProtoReq name
 func (m DOMMarkUndoableState) ProtoReq() string { return "DOM.markUndoableState" }
@@ -840,7 +856,6 @@ func (m DOMMarkUndoableState) Call(c Client) error {
 
 // DOMMoveTo Moves node into the new container, places it before the given anchor.
 type DOMMoveTo struct {
-
 	// NodeID Id of the node to move.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -861,9 +876,8 @@ func (m DOMMoveTo) Call(c Client) (*DOMMoveToResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMMoveToResult Moves node into the new container, places it before the given anchor.
+// DOMMoveToResult ...
 type DOMMoveToResult struct {
-
 	// NodeID New id of the moved node.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -871,7 +885,6 @@ type DOMMoveToResult struct {
 // DOMPerformSearch (experimental) Searches for a given string in the DOM tree. Use `getSearchResults` to access search results or
 // `cancelSearch` to end this search session.
 type DOMPerformSearch struct {
-
 	// Query Plain text or query selector or XPath search query.
 	Query string `json:"query"`
 
@@ -888,10 +901,8 @@ func (m DOMPerformSearch) Call(c Client) (*DOMPerformSearchResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMPerformSearchResult (experimental) Searches for a given string in the DOM tree. Use `getSearchResults` to access search results or
-// `cancelSearch` to end this search session.
+// DOMPerformSearchResult (experimental) ...
 type DOMPerformSearchResult struct {
-
 	// SearchID Unique search session identifier.
 	SearchID string `json:"searchId"`
 
@@ -901,7 +912,6 @@ type DOMPerformSearchResult struct {
 
 // DOMPushNodeByPathToFrontend (experimental) Requests that the node is sent to the caller given its path. // FIXME, use XPath
 type DOMPushNodeByPathToFrontend struct {
-
 	// Path Path to node in the proprietary format.
 	Path string `json:"path"`
 }
@@ -915,16 +925,14 @@ func (m DOMPushNodeByPathToFrontend) Call(c Client) (*DOMPushNodeByPathToFronten
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMPushNodeByPathToFrontendResult (experimental) Requests that the node is sent to the caller given its path. // FIXME, use XPath
+// DOMPushNodeByPathToFrontendResult (experimental) ...
 type DOMPushNodeByPathToFrontendResult struct {
-
 	// NodeID Id of the node for given path.
 	NodeID DOMNodeID `json:"nodeId"`
 }
 
 // DOMPushNodesByBackendIdsToFrontend (experimental) Requests that a batch of nodes is sent to the caller given their backend node ids.
 type DOMPushNodesByBackendIdsToFrontend struct {
-
 	// BackendNodeIds The array of backend node ids.
 	BackendNodeIds []DOMBackendNodeID `json:"backendNodeIds"`
 }
@@ -940,9 +948,8 @@ func (m DOMPushNodesByBackendIdsToFrontend) Call(c Client) (*DOMPushNodesByBacke
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMPushNodesByBackendIdsToFrontendResult (experimental) Requests that a batch of nodes is sent to the caller given their backend node ids.
+// DOMPushNodesByBackendIdsToFrontendResult (experimental) ...
 type DOMPushNodesByBackendIdsToFrontendResult struct {
-
 	// NodeIds The array of ids of pushed nodes that correspond to the backend ids specified in
 	// backendNodeIds.
 	NodeIds []DOMNodeID `json:"nodeIds"`
@@ -950,7 +957,6 @@ type DOMPushNodesByBackendIdsToFrontendResult struct {
 
 // DOMQuerySelector Executes `querySelector` on a given node.
 type DOMQuerySelector struct {
-
 	// NodeID Id of the node to query upon.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -967,16 +973,14 @@ func (m DOMQuerySelector) Call(c Client) (*DOMQuerySelectorResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMQuerySelectorResult Executes `querySelector` on a given node.
+// DOMQuerySelectorResult ...
 type DOMQuerySelectorResult struct {
-
 	// NodeID Query selector result.
 	NodeID DOMNodeID `json:"nodeId"`
 }
 
 // DOMQuerySelectorAll Executes `querySelectorAll` on a given node.
 type DOMQuerySelectorAll struct {
-
 	// NodeID Id of the node to query upon.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -993,16 +997,34 @@ func (m DOMQuerySelectorAll) Call(c Client) (*DOMQuerySelectorAllResult, error) 
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMQuerySelectorAllResult Executes `querySelectorAll` on a given node.
+// DOMQuerySelectorAllResult ...
 type DOMQuerySelectorAllResult struct {
-
 	// NodeIds Query selector result.
 	NodeIds []DOMNodeID `json:"nodeIds"`
 }
 
-// DOMRedo (experimental) Re-does the last undone action.
-type DOMRedo struct {
+// DOMGetTopLayerElements (experimental) Returns NodeIds of current top layer elements.
+// Top layer is rendered closest to the user within a viewport, therefore its elements always
+// appear on top of all other content.
+type DOMGetTopLayerElements struct{}
+
+// ProtoReq name
+func (m DOMGetTopLayerElements) ProtoReq() string { return "DOM.getTopLayerElements" }
+
+// Call the request
+func (m DOMGetTopLayerElements) Call(c Client) (*DOMGetTopLayerElementsResult, error) {
+	var res DOMGetTopLayerElementsResult
+	return &res, call(m.ProtoReq(), m, &res, c)
 }
+
+// DOMGetTopLayerElementsResult (experimental) ...
+type DOMGetTopLayerElementsResult struct {
+	// NodeIds NodeIds of top layer elements
+	NodeIds []DOMNodeID `json:"nodeIds"`
+}
+
+// DOMRedo (experimental) Re-does the last undone action.
+type DOMRedo struct{}
 
 // ProtoReq name
 func (m DOMRedo) ProtoReq() string { return "DOM.redo" }
@@ -1014,7 +1036,6 @@ func (m DOMRedo) Call(c Client) error {
 
 // DOMRemoveAttribute Removes attribute with given name from an element with given id.
 type DOMRemoveAttribute struct {
-
 	// NodeID Id of the element to remove attribute from.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1032,7 +1053,6 @@ func (m DOMRemoveAttribute) Call(c Client) error {
 
 // DOMRemoveNode Removes node with given id.
 type DOMRemoveNode struct {
-
 	// NodeID Id of the node to remove.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -1049,13 +1069,12 @@ func (m DOMRemoveNode) Call(c Client) error {
 // `setChildNodes` events where not only immediate children are retrieved, but all children down to
 // the specified depth.
 type DOMRequestChildNodes struct {
-
 	// NodeID Id of the node to get children for.
 	NodeID DOMNodeID `json:"nodeId"`
 
 	// Depth (optional) The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
 	// entire subtree or provide an integer larger than 0.
-	Depth int `json:"depth,omitempty"`
+	Depth *int `json:"depth,omitempty"`
 
 	// Pierce (optional) Whether or not iframes and shadow roots should be traversed when returning the sub-tree
 	// (default is false).
@@ -1074,7 +1093,6 @@ func (m DOMRequestChildNodes) Call(c Client) error {
 // nodes that form the path from the node to the root are also sent to the client as a series of
 // `setChildNodes` notifications.
 type DOMRequestNode struct {
-
 	// ObjectID JavaScript object id to convert into node.
 	ObjectID RuntimeRemoteObjectID `json:"objectId"`
 }
@@ -1088,18 +1106,14 @@ func (m DOMRequestNode) Call(c Client) (*DOMRequestNodeResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMRequestNodeResult Requests that the node is sent to the caller given the JavaScript node object reference. All
-// nodes that form the path from the node to the root are also sent to the client as a series of
-// `setChildNodes` notifications.
+// DOMRequestNodeResult ...
 type DOMRequestNodeResult struct {
-
 	// NodeID Node id for given object.
 	NodeID DOMNodeID `json:"nodeId"`
 }
 
 // DOMResolveNode Resolves the JavaScript node object for a given NodeId or BackendNodeId.
 type DOMResolveNode struct {
-
 	// NodeID (optional) Id of the node to resolve.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 
@@ -1122,16 +1136,14 @@ func (m DOMResolveNode) Call(c Client) (*DOMResolveNodeResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMResolveNodeResult Resolves the JavaScript node object for a given NodeId or BackendNodeId.
+// DOMResolveNodeResult ...
 type DOMResolveNodeResult struct {
-
 	// Object JavaScript object wrapper for given node.
 	Object *RuntimeRemoteObject `json:"object"`
 }
 
 // DOMSetAttributeValue Sets attribute for an element with given id.
 type DOMSetAttributeValue struct {
-
 	// NodeID Id of the element to set attribute for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1153,7 +1165,6 @@ func (m DOMSetAttributeValue) Call(c Client) error {
 // DOMSetAttributesAsText Sets attributes on element with given id. This method is useful when user edits some existing
 // attribute value and types in several attribute name/value pairs.
 type DOMSetAttributesAsText struct {
-
 	// NodeID Id of the element to set attributes for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1175,7 +1186,6 @@ func (m DOMSetAttributesAsText) Call(c Client) error {
 
 // DOMSetFileInputFiles Sets files for the given file input element.
 type DOMSetFileInputFiles struct {
-
 	// Files Array of file paths to set.
 	Files []string `json:"files"`
 
@@ -1199,7 +1209,6 @@ func (m DOMSetFileInputFiles) Call(c Client) error {
 
 // DOMSetNodeStackTracesEnabled (experimental) Sets if stack traces should be captured for Nodes. See `Node.getNodeStackTraces`. Default is disabled.
 type DOMSetNodeStackTracesEnabled struct {
-
 	// Enable Enable or disable.
 	Enable bool `json:"enable"`
 }
@@ -1214,7 +1223,6 @@ func (m DOMSetNodeStackTracesEnabled) Call(c Client) error {
 
 // DOMGetNodeStackTraces (experimental) Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
 type DOMGetNodeStackTraces struct {
-
 	// NodeID Id of the node to get stack traces for.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -1228,9 +1236,8 @@ func (m DOMGetNodeStackTraces) Call(c Client) (*DOMGetNodeStackTracesResult, err
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetNodeStackTracesResult (experimental) Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+// DOMGetNodeStackTracesResult (experimental) ...
 type DOMGetNodeStackTracesResult struct {
-
 	// Creation (optional) Creation stack trace, if available.
 	Creation *RuntimeStackTrace `json:"creation,omitempty"`
 }
@@ -1238,7 +1245,6 @@ type DOMGetNodeStackTracesResult struct {
 // DOMGetFileInfo (experimental) Returns file information for the given
 // File wrapper.
 type DOMGetFileInfo struct {
-
 	// ObjectID JavaScript object id of the node wrapper.
 	ObjectID RuntimeRemoteObjectID `json:"objectId"`
 }
@@ -1252,10 +1258,8 @@ func (m DOMGetFileInfo) Call(c Client) (*DOMGetFileInfoResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetFileInfoResult (experimental) Returns file information for the given
-// File wrapper.
+// DOMGetFileInfoResult (experimental) ...
 type DOMGetFileInfoResult struct {
-
 	// Path ...
 	Path string `json:"path"`
 }
@@ -1263,7 +1267,6 @@ type DOMGetFileInfoResult struct {
 // DOMSetInspectedNode (experimental) Enables console to refer to the node with given id via $x (see Command Line API for more details
 // $x functions).
 type DOMSetInspectedNode struct {
-
 	// NodeID DOM node id to be accessible by means of $x command line API.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -1278,7 +1281,6 @@ func (m DOMSetInspectedNode) Call(c Client) error {
 
 // DOMSetNodeName Sets node name for a node with given id.
 type DOMSetNodeName struct {
-
 	// NodeID Id of the node to set name for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1295,16 +1297,14 @@ func (m DOMSetNodeName) Call(c Client) (*DOMSetNodeNameResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMSetNodeNameResult Sets node name for a node with given id.
+// DOMSetNodeNameResult ...
 type DOMSetNodeNameResult struct {
-
 	// NodeID New node's id.
 	NodeID DOMNodeID `json:"nodeId"`
 }
 
 // DOMSetNodeValue Sets node value for a node with given id.
 type DOMSetNodeValue struct {
-
 	// NodeID Id of the node to set value for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1322,7 +1322,6 @@ func (m DOMSetNodeValue) Call(c Client) error {
 
 // DOMSetOuterHTML Sets node HTML markup, returns new node id.
 type DOMSetOuterHTML struct {
-
 	// NodeID Id of the node to set markup for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1339,8 +1338,7 @@ func (m DOMSetOuterHTML) Call(c Client) error {
 }
 
 // DOMUndo (experimental) Undoes the last performed action.
-type DOMUndo struct {
-}
+type DOMUndo struct{}
 
 // ProtoReq name
 func (m DOMUndo) ProtoReq() string { return "DOM.undo" }
@@ -1352,7 +1350,6 @@ func (m DOMUndo) Call(c Client) error {
 
 // DOMGetFrameOwner (experimental) Returns iframe node that owns iframe with the given domain.
 type DOMGetFrameOwner struct {
-
 	// FrameID ...
 	FrameID PageFrameID `json:"frameId"`
 }
@@ -1366,9 +1363,8 @@ func (m DOMGetFrameOwner) Call(c Client) (*DOMGetFrameOwnerResult, error) {
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetFrameOwnerResult (experimental) Returns iframe node that owns iframe with the given domain.
+// DOMGetFrameOwnerResult (experimental) ...
 type DOMGetFrameOwnerResult struct {
-
 	// BackendNodeID Resulting node.
 	BackendNodeID DOMBackendNodeID `json:"backendNodeId"`
 
@@ -1376,16 +1372,22 @@ type DOMGetFrameOwnerResult struct {
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 }
 
-// DOMGetContainerForNode (experimental) Returns the container of the given node based on container query conditions.
-// If containerName is given, it will find the nearest container with a matching name;
-// otherwise it will find the nearest container regardless of its container name.
+// DOMGetContainerForNode (experimental) Returns the query container of the given node based on container query
+// conditions: containerName, physical, and logical axes. If no axes are
+// provided, the style container is returned, which is the direct parent or the
+// closest element with a matching container-name.
 type DOMGetContainerForNode struct {
-
 	// NodeID ...
 	NodeID DOMNodeID `json:"nodeId"`
 
 	// ContainerName (optional) ...
 	ContainerName string `json:"containerName,omitempty"`
+
+	// PhysicalAxes (optional) ...
+	PhysicalAxes DOMPhysicalAxes `json:"physicalAxes,omitempty"`
+
+	// LogicalAxes (optional) ...
+	LogicalAxes DOMLogicalAxes `json:"logicalAxes,omitempty"`
 }
 
 // ProtoReq name
@@ -1397,18 +1399,38 @@ func (m DOMGetContainerForNode) Call(c Client) (*DOMGetContainerForNodeResult, e
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// DOMGetContainerForNodeResult (experimental) Returns the container of the given node based on container query conditions.
-// If containerName is given, it will find the nearest container with a matching name;
-// otherwise it will find the nearest container regardless of its container name.
+// DOMGetContainerForNodeResult (experimental) ...
 type DOMGetContainerForNodeResult struct {
-
 	// NodeID (optional) The container node for the given node, or null if not found.
 	NodeID DOMNodeID `json:"nodeId,omitempty"`
 }
 
+// DOMGetQueryingDescendantsForContainer (experimental) Returns the descendants of a container query container that have
+// container queries against this container.
+type DOMGetQueryingDescendantsForContainer struct {
+	// NodeID Id of the container node to find querying descendants from.
+	NodeID DOMNodeID `json:"nodeId"`
+}
+
+// ProtoReq name
+func (m DOMGetQueryingDescendantsForContainer) ProtoReq() string {
+	return "DOM.getQueryingDescendantsForContainer"
+}
+
+// Call the request
+func (m DOMGetQueryingDescendantsForContainer) Call(c Client) (*DOMGetQueryingDescendantsForContainerResult, error) {
+	var res DOMGetQueryingDescendantsForContainerResult
+	return &res, call(m.ProtoReq(), m, &res, c)
+}
+
+// DOMGetQueryingDescendantsForContainerResult (experimental) ...
+type DOMGetQueryingDescendantsForContainerResult struct {
+	// NodeIds Descendant nodes with container queries against the given container.
+	NodeIds []DOMNodeID `json:"nodeIds"`
+}
+
 // DOMAttributeModified Fired when `Element`'s attribute is modified.
 type DOMAttributeModified struct {
-
 	// NodeID Id of the node that has changed.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1426,7 +1448,6 @@ func (evt DOMAttributeModified) ProtoEvent() string {
 
 // DOMAttributeRemoved Fired when `Element`'s attribute is removed.
 type DOMAttributeRemoved struct {
-
 	// NodeID Id of the node that has changed.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1441,7 +1462,6 @@ func (evt DOMAttributeRemoved) ProtoEvent() string {
 
 // DOMCharacterDataModified Mirrors `DOMCharacterDataModified` event.
 type DOMCharacterDataModified struct {
-
 	// NodeID Id of the node that has changed.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1456,7 +1476,6 @@ func (evt DOMCharacterDataModified) ProtoEvent() string {
 
 // DOMChildNodeCountUpdated Fired when `Container`'s child node count has changed.
 type DOMChildNodeCountUpdated struct {
-
 	// NodeID Id of the node that has changed.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -1471,11 +1490,10 @@ func (evt DOMChildNodeCountUpdated) ProtoEvent() string {
 
 // DOMChildNodeInserted Mirrors `DOMNodeInserted` event.
 type DOMChildNodeInserted struct {
-
 	// ParentNodeID Id of the node that has changed.
 	ParentNodeID DOMNodeID `json:"parentNodeId"`
 
-	// PreviousNodeID If of the previous siblint.
+	// PreviousNodeID Id of the previous sibling.
 	PreviousNodeID DOMNodeID `json:"previousNodeId"`
 
 	// Node Inserted node data.
@@ -1489,7 +1507,6 @@ func (evt DOMChildNodeInserted) ProtoEvent() string {
 
 // DOMChildNodeRemoved Mirrors `DOMNodeRemoved` event.
 type DOMChildNodeRemoved struct {
-
 	// ParentNodeID Parent id.
 	ParentNodeID DOMNodeID `json:"parentNodeId"`
 
@@ -1504,7 +1521,6 @@ func (evt DOMChildNodeRemoved) ProtoEvent() string {
 
 // DOMDistributedNodesUpdated (experimental) Called when distribution is changed.
 type DOMDistributedNodesUpdated struct {
-
 	// InsertionPointID Insertion point where distributed nodes were updated.
 	InsertionPointID DOMNodeID `json:"insertionPointId"`
 
@@ -1518,8 +1534,7 @@ func (evt DOMDistributedNodesUpdated) ProtoEvent() string {
 }
 
 // DOMDocumentUpdated Fired when `Document` has been totally updated. Node ids are no longer valid.
-type DOMDocumentUpdated struct {
-}
+type DOMDocumentUpdated struct{}
 
 // ProtoEvent name
 func (evt DOMDocumentUpdated) ProtoEvent() string {
@@ -1528,7 +1543,6 @@ func (evt DOMDocumentUpdated) ProtoEvent() string {
 
 // DOMInlineStyleInvalidated (experimental) Fired when `Element`'s inline style is modified via a CSS property modification.
 type DOMInlineStyleInvalidated struct {
-
 	// NodeIds Ids of the nodes for which the inline styles have been invalidated.
 	NodeIds []DOMNodeID `json:"nodeIds"`
 }
@@ -1540,7 +1554,6 @@ func (evt DOMInlineStyleInvalidated) ProtoEvent() string {
 
 // DOMPseudoElementAdded (experimental) Called when a pseudo element is added to an element.
 type DOMPseudoElementAdded struct {
-
 	// ParentID Pseudo element's parent element id.
 	ParentID DOMNodeID `json:"parentId"`
 
@@ -1553,9 +1566,16 @@ func (evt DOMPseudoElementAdded) ProtoEvent() string {
 	return "DOM.pseudoElementAdded"
 }
 
+// DOMTopLayerElementsUpdated (experimental) Called when top layer elements are changed.
+type DOMTopLayerElementsUpdated struct{}
+
+// ProtoEvent name
+func (evt DOMTopLayerElementsUpdated) ProtoEvent() string {
+	return "DOM.topLayerElementsUpdated"
+}
+
 // DOMPseudoElementRemoved (experimental) Called when a pseudo element is removed from an element.
 type DOMPseudoElementRemoved struct {
-
 	// ParentID Pseudo element's parent element id.
 	ParentID DOMNodeID `json:"parentId"`
 
@@ -1571,7 +1591,6 @@ func (evt DOMPseudoElementRemoved) ProtoEvent() string {
 // DOMSetChildNodes Fired when backend wants to provide client with the missing DOM structure. This happens upon
 // most of the calls requesting node ids.
 type DOMSetChildNodes struct {
-
 	// ParentID Parent node id to populate with children.
 	ParentID DOMNodeID `json:"parentId"`
 
@@ -1586,7 +1605,6 @@ func (evt DOMSetChildNodes) ProtoEvent() string {
 
 // DOMShadowRootPopped (experimental) Called when shadow root is popped from the element.
 type DOMShadowRootPopped struct {
-
 	// HostID Host element id.
 	HostID DOMNodeID `json:"hostId"`
 
@@ -1601,7 +1619,6 @@ func (evt DOMShadowRootPopped) ProtoEvent() string {
 
 // DOMShadowRootPushed (experimental) Called when shadow root is pushed into the element.
 type DOMShadowRootPushed struct {
-
 	// HostID Host element id.
 	HostID DOMNodeID `json:"hostId"`
 

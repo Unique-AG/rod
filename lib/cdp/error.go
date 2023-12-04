@@ -28,6 +28,12 @@ var ErrCtxNotFound = &Error{
 	Message: "Cannot find context with specified id",
 }
 
+// ErrSessionNotFound type
+var ErrSessionNotFound = &Error{
+	Code:    -32001,
+	Message: "Session with given id not found.",
+}
+
 // ErrSearchSessionNotFound type
 var ErrSearchSessionNotFound = &Error{
 	Code:    -32000,
@@ -52,31 +58,8 @@ var ErrNodeNotFoundAtPos = &Error{
 	Message: "No node found at given location",
 }
 
-// ErrNoContentQuads type
-var ErrNoContentQuads = &Error{
+// ErrNotAttachedToActivePage type
+var ErrNotAttachedToActivePage = &Error{
 	Code:    -32000,
-	Message: "Could not compute content quads.",
-}
-
-// ErrConnClosed type
-var ErrConnClosed = &errConnClosed{}
-
-type errConnClosed struct {
-	details error
-}
-
-// Error stdlib interface
-func (e *errConnClosed) Error() string {
-	return fmt.Sprintf("cdp connection closed: %v", e.details)
-}
-
-// Is stdlib interface
-func (e errConnClosed) Is(target error) bool {
-	_, ok := target.(*errConnClosed)
-	return ok
-}
-
-// Unwrap stdlib interface
-func (e errConnClosed) Unwrap() error {
-	return e.details
+	Message: "Not attached to an active page",
 }

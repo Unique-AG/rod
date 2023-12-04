@@ -3,6 +3,7 @@ package launcher
 
 import (
 	"context"
+	"crypto"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +11,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/Unique-AG/rod/lib/defaults"
 	"github.com/Unique-AG/rod/lib/launcher/flags"
@@ -37,6 +40,8 @@ type Launcher struct {
 
 	managed    bool
 	serviceURL string
+
+	isLaunched int32 // zero means not launched
 }
 
 // New returns the default arguments to start browser.
@@ -61,6 +66,8 @@ func New() *Launcher {
 		// enable headless by default
 		flags.Headless: nil,
 
+		flags.Preferences: {`{"plugins":{"always_open_pdf_externally": true}}`},
+
 		// to disable the init blank window
 		"no-first-run":      nil,
 		"no-startup-window": nil,
@@ -68,9 +75,7 @@ func New() *Launcher {
 		// TODO: about the "site-per-process" see https://github.com/puppeteer/puppeteer/issues/2548
 		"disable-features": {"site-per-process", "TranslateUI"},
 
-		// hide the navigator.webdriver
-		"disable-blink-features": {"AutomationControlled"},
-
+		"disable-dev-shm-usage":                              nil,
 		"disable-background-networking":                      nil,
 		"disable-background-timer-throttling":                nil,
 		"disable-backgrounding-occluded-windows":             nil,
@@ -78,7 +83,6 @@ func New() *Launcher {
 		"disable-client-side-phishing-detection":             nil,
 		"disable-component-extensions-with-background-pages": nil,
 		"disable-default-apps":                               nil,
-		"disable-dev-shm-usage":                              nil,
 		"disable-hang-monitor":                               nil,
 		"disable-ipc-flooding-protection":                    nil,
 		"disable-popup-blocking":                             nil,
@@ -139,6 +143,17 @@ func NewUserMode() *Launcher {
 	}
 }
 
+// NewAppMode is a preset to run the browser like a native application.
+func NewAppMode(u string) *Launcher {
+	l := New()
+	l.Set(flags.App, u).
+		Set(flags.Env, "GOOGLE_API_KEY=no").
+		Headless(false).
+		Delete("no-startup-window").
+		Delete("enable-automation")
+	return l
+}
+
 // Context sets the context
 func (l *Launcher) Context(ctx context.Context) *Launcher {
 	ctx, cancel := context.WithCancel(ctx)
@@ -148,9 +163,14 @@ func (l *Launcher) Context(ctx context.Context) *Launcher {
 	return l
 }
 
-// Set a command line argument to launch the browser.
+// Set a command line argument when launching the browser.
+// Be careful the first argument is a flag name, it shouldn't contain values. The values the will be joined with comma.
+// A flag can have multiple values. If no values are provided the flag will be a boolean flag.
+// You can use the [Launcher.FormatArgs] to debug the final CLI arguments.
+// List of available flags: https://peter.sh/experiments/chromium-command-line-switches
 func (l *Launcher) Set(name flags.Flag, values ...string) *Launcher {
-	l.Flags[l.normalizeFlag(name)] = values
+	name.Check()
+	l.Flags[name.NormalizeFlag()] = values
 	return l
 }
 
@@ -170,7 +190,7 @@ func (l *Launcher) Has(name flags.Flag) bool {
 
 // GetFlags from settings
 func (l *Launcher) GetFlags(name flags.Flag) ([]string, bool) {
-	flag, has := l.Flags[l.normalizeFlag(name)]
+	flag, has := l.Flags[name.NormalizeFlag()]
 	return flag, has
 }
 
@@ -185,13 +205,19 @@ func (l *Launcher) Append(name flags.Flag, values ...string) *Launcher {
 
 // Delete a flag
 func (l *Launcher) Delete(name flags.Flag) *Launcher {
-	delete(l.Flags, l.normalizeFlag(name))
+	delete(l.Flags, name.NormalizeFlag())
 	return l
 }
 
-// Bin set
+// Bin of the browser binary path to launch, if the path is not empty the auto download will be disabled
 func (l *Launcher) Bin(path string) *Launcher {
 	return l.Set(flags.Bin, path)
+}
+
+// Revision of the browser to auto download
+func (l *Launcher) Revision(rev int) *Launcher {
+	l.browser.Revision = rev
+	return l
 }
 
 // Headless switch. Whether to run browser in headless mode. A mode without visible UI.
@@ -218,6 +244,11 @@ func (l *Launcher) XVFB(args ...string) *Launcher {
 	return l.Set(flags.XVFB, args...)
 }
 
+// Preferences set chromium user preferences, such as set the default search engine or disable the pdf viewer.
+func (l *Launcher) Preferences(pref string) *Launcher {
+	return l.Set(flags.Preferences, pref)
+}
+
 // Leakless switch. If enabled, the browser will be force killed after the Go process exits.
 // The doc of leakless: https://github.com/ysmood/leakless.
 func (l *Launcher) Leakless(enable bool) *Launcher {
@@ -233,6 +264,23 @@ func (l *Launcher) Devtools(autoOpenForTabs bool) *Launcher {
 		return l.Set("auto-open-devtools-for-tabs")
 	}
 	return l.Delete("auto-open-devtools-for-tabs")
+}
+
+// IgnoreCerts configure the Chrome's ignore-certificate-errors-spki-list argument with the public keys.
+func (l *Launcher) IgnoreCerts(pks []crypto.PublicKey) error {
+	spkis := make([]string, 0, len(pks))
+
+	for _, pk := range pks {
+		spki, err := certSPKI(pk)
+		if err != nil {
+			return fmt.Errorf("certSPKI: %w", err)
+		}
+		spkis = append(spkis, string(spki))
+	}
+
+	l.Set("ignore-certificate-errors-spki-list", spkis...)
+
+	return nil
 }
 
 // UserDataDir is where the browser will look for all of its state, such as cookie and cache.
@@ -252,9 +300,9 @@ func (l *Launcher) UserDataDir(dir string) *Launcher {
 // Related article: https://superuser.com/a/377195
 func (l *Launcher) ProfileDir(dir string) *Launcher {
 	if dir == "" {
-		l.Delete("profile-directory")
+		l.Delete(flags.ProfileDir)
 	} else {
-		l.Set("profile-directory", dir)
+		l.Set(flags.ProfileDir, dir)
 	}
 	return l
 }
@@ -266,7 +314,7 @@ func (l *Launcher) RemoteDebuggingPort(port int) *Launcher {
 	return l.Set(flags.RemoteDebuggingPort, fmt.Sprintf("%d", port))
 }
 
-// Proxy switch. When disabled leakless will be disabled.
+// Proxy for the browser
 func (l *Launcher) Proxy(host string) *Launcher {
 	return l.Set(flags.ProxyServer, host)
 }
@@ -276,9 +324,10 @@ func (l *Launcher) WorkingDir(path string) *Launcher {
 	return l.Set(flags.WorkingDir, path)
 }
 
-// Env to launch the browser process. The default value is os.Environ().
-// Usually you use it to set the timezone env. Such as Env("TZ=America/New_York").
-// Timezone list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+// Env to launch the browser process. The default value is [os.Environ]().
+// Usually you use it to set the timezone env. Such as:
+//
+//	Env(append(os.Environ(), "TZ=Asia/Tokyo")...)
 func (l *Launcher) Env(env ...string) *Launcher {
 	return l.Set(flags.Env, env...)
 }
@@ -288,11 +337,11 @@ func (l *Launcher) StartURL(u string) *Launcher {
 	return l.Set("", u)
 }
 
-// FormatArgs returns the formated arg list for cli
+// FormatArgs returns the formatted arg list for cli
 func (l *Launcher) FormatArgs() []string {
 	execArgs := []string{}
 	for k, v := range l.Flags {
-		if k == "" {
+		if k == flags.Arguments {
 			continue
 		}
 
@@ -313,11 +362,16 @@ func (l *Launcher) FormatArgs() []string {
 		}
 		execArgs = append(execArgs, str)
 	}
-	return append(execArgs, l.Flags[""]...)
+
+	execArgs = append(execArgs, l.Flags[flags.Arguments]...)
+	sort.Strings(execArgs)
+	return execArgs
 }
 
 // Logger to handle stdout and stderr from browser.
-// For example, pipe all browser output to stdout: launcher.New().Logger(os.Stdout)
+// For example, pipe all browser output to stdout:
+//
+//	launcher.New().Logger(os.Stdout)
 func (l *Launcher) Logger(w io.Writer) *Launcher {
 	l.logger = w
 	return l
@@ -332,8 +386,14 @@ func (l *Launcher) MustLaunch() string {
 
 // Launch a standalone temp browser instance and returns the debug url.
 // bin and profileDir are optional, set them to empty to use the default values.
-// If you want to reuse sessions, such as cookies, set the UserDataDir to the same location.
+// If you want to reuse sessions, such as cookies, set the [Launcher.UserDataDir] to the same location.
+//
+// Please note launcher can only be used once.
 func (l *Launcher) Launch() (string, error) {
+	if l.hasLaunched() {
+		return "", ErrAlreadyLaunched
+	}
+
 	defer l.ctxCancel()
 
 	bin, err := l.getBin()
@@ -341,19 +401,23 @@ func (l *Launcher) Launch() (string, error) {
 		return "", err
 	}
 
+	l.setupUserPreferences()
+
 	var ll *leakless.Launcher
 	var cmd *exec.Cmd
 
+	args := l.FormatArgs()
+
 	if l.Has(flags.Leakless) && leakless.Support() {
 		ll = leakless.New()
-		cmd = ll.Command(bin, l.FormatArgs()...)
+		cmd = ll.Command(bin, args...)
 	} else {
 		port := l.Get(flags.RemoteDebuggingPort)
 		u, err := ResolveURL(port)
 		if err == nil {
 			return u, nil
 		}
-		cmd = exec.Command(bin, l.FormatArgs()...)
+		cmd = exec.Command(bin, args...)
 	}
 
 	l.setupCmd(cmd)
@@ -384,6 +448,35 @@ func (l *Launcher) Launch() (string, error) {
 	}
 
 	return ResolveURL(u)
+}
+
+func (l *Launcher) hasLaunched() bool {
+	return !atomic.CompareAndSwapInt32(&l.isLaunched, 0, 1)
+}
+
+func (l *Launcher) setupUserPreferences() {
+	userDir := l.Get(flags.UserDataDir)
+	if userDir == "" {
+		return
+	}
+
+	userDir, err := filepath.Abs(userDir)
+	utils.E(err)
+
+	profile := l.Get(flags.ProfileDir)
+	if profile == "" {
+		profile = "Default"
+	}
+
+	path := filepath.Join(userDir, profile, "Preferences")
+
+	pref := l.Get(flags.Preferences)
+
+	if pref == "" {
+		pref = "{}"
+	}
+
+	utils.E(utils.OutputFile(path, pref))
 }
 
 func (l *Launcher) setupCmd(cmd *exec.Cmd) {
@@ -440,14 +533,10 @@ func (l *Launcher) Kill() {
 	}
 }
 
-// Cleanup wait until the Browser exits and remove UserDataDir
+// Cleanup wait until the Browser exits and remove [flags.UserDataDir]
 func (l *Launcher) Cleanup() {
 	<-l.exit
 
 	dir := l.Get(flags.UserDataDir)
 	_ = os.RemoveAll(dir)
-}
-
-func (l *Launcher) normalizeFlag(name flags.Flag) flags.Flag {
-	return flags.Flag(strings.TrimLeft(string(name), "-"))
 }

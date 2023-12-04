@@ -16,7 +16,6 @@ This domain provides various functionality related to drawing atop the inspected
 
 // OverlaySourceOrderConfig Configuration data for drawing the source order of an elements children.
 type OverlaySourceOrderConfig struct {
-
 	// ParentOutlineColor the color to outline the givent element in.
 	ParentOutlineColor *DOMRGBA `json:"parentOutlineColor"`
 
@@ -26,7 +25,6 @@ type OverlaySourceOrderConfig struct {
 
 // OverlayGridHighlightConfig Configuration data for the highlighting of Grid elements.
 type OverlayGridHighlightConfig struct {
-
 	// ShowGridExtensionLines (optional) Whether the extension lines from grid cells to the rulers should be shown (default: false).
 	ShowGridExtensionLines bool `json:"showGridExtensionLines,omitempty"`
 
@@ -90,7 +88,6 @@ type OverlayGridHighlightConfig struct {
 
 // OverlayFlexContainerHighlightConfig Configuration data for the highlighting of Flex container elements.
 type OverlayFlexContainerHighlightConfig struct {
-
 	// ContainerBorder (optional) The style of the container border
 	ContainerBorder *OverlayLineStyle `json:"containerBorder,omitempty"`
 
@@ -118,7 +115,6 @@ type OverlayFlexContainerHighlightConfig struct {
 
 // OverlayFlexItemHighlightConfig Configuration data for the highlighting of Flex item elements.
 type OverlayFlexItemHighlightConfig struct {
-
 	// BaseSizeBox (optional) Style of the box representing the item's base size
 	BaseSizeBox *OverlayBoxStyle `json:"baseSizeBox,omitempty"`
 
@@ -142,7 +138,6 @@ const (
 
 // OverlayLineStyle Style information for drawing a line.
 type OverlayLineStyle struct {
-
 	// Color (optional) The color of the line (default: transparent)
 	Color *DOMRGBA `json:"color,omitempty"`
 
@@ -152,7 +147,6 @@ type OverlayLineStyle struct {
 
 // OverlayBoxStyle Style information for drawing a box.
 type OverlayBoxStyle struct {
-
 	// FillColor (optional) The background color for the box (default: transparent)
 	FillColor *DOMRGBA `json:"fillColor,omitempty"`
 
@@ -176,7 +170,6 @@ const (
 
 // OverlayHighlightConfig Configuration data for the highlighting of page elements.
 type OverlayHighlightConfig struct {
-
 	// ShowInfo (optional) Whether the node info tooltip should be shown (default: false).
 	ShowInfo bool `json:"showInfo,omitempty"`
 
@@ -245,13 +238,15 @@ const (
 	// OverlayColorFormatHsl enum const
 	OverlayColorFormatHsl OverlayColorFormat = "hsl"
 
+	// OverlayColorFormatHwb enum const
+	OverlayColorFormatHwb OverlayColorFormat = "hwb"
+
 	// OverlayColorFormatHex enum const
 	OverlayColorFormatHex OverlayColorFormat = "hex"
 )
 
 // OverlayGridNodeHighlightConfig Configurations for Persistent Grid Highlight
 type OverlayGridNodeHighlightConfig struct {
-
 	// GridHighlightConfig A descriptor for the highlight appearance.
 	GridHighlightConfig *OverlayGridHighlightConfig `json:"gridHighlightConfig"`
 
@@ -261,7 +256,6 @@ type OverlayGridNodeHighlightConfig struct {
 
 // OverlayFlexNodeHighlightConfig ...
 type OverlayFlexNodeHighlightConfig struct {
-
 	// FlexContainerHighlightConfig A descriptor for the highlight appearance of flex containers.
 	FlexContainerHighlightConfig *OverlayFlexContainerHighlightConfig `json:"flexContainerHighlightConfig"`
 
@@ -271,7 +265,6 @@ type OverlayFlexNodeHighlightConfig struct {
 
 // OverlayScrollSnapContainerHighlightConfig ...
 type OverlayScrollSnapContainerHighlightConfig struct {
-
 	// SnapportBorder (optional) The style of the snapport border (default: transparent)
 	SnapportBorder *OverlayLineStyle `json:"snapportBorder,omitempty"`
 
@@ -287,7 +280,6 @@ type OverlayScrollSnapContainerHighlightConfig struct {
 
 // OverlayScrollSnapHighlightConfig ...
 type OverlayScrollSnapHighlightConfig struct {
-
 	// ScrollSnapContainerHighlightConfig A descriptor for the highlight appearance of scroll snap containers.
 	ScrollSnapContainerHighlightConfig *OverlayScrollSnapContainerHighlightConfig `json:"scrollSnapContainerHighlightConfig"`
 
@@ -297,7 +289,6 @@ type OverlayScrollSnapHighlightConfig struct {
 
 // OverlayHingeConfig Configuration for dual screen hinge
 type OverlayHingeConfig struct {
-
 	// Rect A rectangle represent hinge
 	Rect *DOMRect `json:"rect"`
 
@@ -310,7 +301,6 @@ type OverlayHingeConfig struct {
 
 // OverlayContainerQueryHighlightConfig ...
 type OverlayContainerQueryHighlightConfig struct {
-
 	// ContainerQueryContainerHighlightConfig A descriptor for the highlight appearance of container query containers.
 	ContainerQueryContainerHighlightConfig *OverlayContainerQueryContainerHighlightConfig `json:"containerQueryContainerHighlightConfig"`
 
@@ -320,9 +310,32 @@ type OverlayContainerQueryHighlightConfig struct {
 
 // OverlayContainerQueryContainerHighlightConfig ...
 type OverlayContainerQueryContainerHighlightConfig struct {
-
-	// ContainerBorder (optional) The style of the container border
+	// ContainerBorder (optional) The style of the container border.
 	ContainerBorder *OverlayLineStyle `json:"containerBorder,omitempty"`
+
+	// DescendantBorder (optional) The style of the descendants' borders.
+	DescendantBorder *OverlayLineStyle `json:"descendantBorder,omitempty"`
+}
+
+// OverlayIsolatedElementHighlightConfig ...
+type OverlayIsolatedElementHighlightConfig struct {
+	// IsolationModeHighlightConfig A descriptor for the highlight appearance of an element in isolation mode.
+	IsolationModeHighlightConfig *OverlayIsolationModeHighlightConfig `json:"isolationModeHighlightConfig"`
+
+	// NodeID Identifier of the isolated element to highlight.
+	NodeID DOMNodeID `json:"nodeId"`
+}
+
+// OverlayIsolationModeHighlightConfig ...
+type OverlayIsolationModeHighlightConfig struct {
+	// ResizerColor (optional) The fill color of the resizers (default: transparent).
+	ResizerColor *DOMRGBA `json:"resizerColor,omitempty"`
+
+	// ResizerHandleColor (optional) The fill color for resizer handles (default: transparent).
+	ResizerHandleColor *DOMRGBA `json:"resizerHandleColor,omitempty"`
+
+	// MaskColor (optional) The fill color for the mask covering non-isolated elements (default: transparent).
+	MaskColor *DOMRGBA `json:"maskColor,omitempty"`
 }
 
 // OverlayInspectMode ...
@@ -346,8 +359,7 @@ const (
 )
 
 // OverlayDisable Disables domain notifications.
-type OverlayDisable struct {
-}
+type OverlayDisable struct{}
 
 // ProtoReq name
 func (m OverlayDisable) ProtoReq() string { return "Overlay.disable" }
@@ -358,8 +370,7 @@ func (m OverlayDisable) Call(c Client) error {
 }
 
 // OverlayEnable Enables domain notifications.
-type OverlayEnable struct {
-}
+type OverlayEnable struct{}
 
 // ProtoReq name
 func (m OverlayEnable) ProtoReq() string { return "Overlay.enable" }
@@ -371,7 +382,6 @@ func (m OverlayEnable) Call(c Client) error {
 
 // OverlayGetHighlightObjectForTest For testing.
 type OverlayGetHighlightObjectForTest struct {
-
 	// NodeID Id of the node to get highlight object for.
 	NodeID DOMNodeID `json:"nodeId"`
 
@@ -399,16 +409,14 @@ func (m OverlayGetHighlightObjectForTest) Call(c Client) (*OverlayGetHighlightOb
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// OverlayGetHighlightObjectForTestResult For testing.
+// OverlayGetHighlightObjectForTestResult ...
 type OverlayGetHighlightObjectForTestResult struct {
-
 	// Highlight Highlight data for the node.
 	Highlight map[string]gson.JSON `json:"highlight"`
 }
 
 // OverlayGetGridHighlightObjectsForTest For Persistent Grid testing.
 type OverlayGetGridHighlightObjectsForTest struct {
-
 	// NodeIds Ids of the node to get highlight object for.
 	NodeIds []DOMNodeID `json:"nodeIds"`
 }
@@ -424,16 +432,14 @@ func (m OverlayGetGridHighlightObjectsForTest) Call(c Client) (*OverlayGetGridHi
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// OverlayGetGridHighlightObjectsForTestResult For Persistent Grid testing.
+// OverlayGetGridHighlightObjectsForTestResult ...
 type OverlayGetGridHighlightObjectsForTestResult struct {
-
 	// Highlights Grid Highlight data for the node ids provided.
 	Highlights map[string]gson.JSON `json:"highlights"`
 }
 
 // OverlayGetSourceOrderHighlightObjectForTest For Source Order Viewer testing.
 type OverlayGetSourceOrderHighlightObjectForTest struct {
-
 	// NodeID Id of the node to highlight.
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -449,16 +455,14 @@ func (m OverlayGetSourceOrderHighlightObjectForTest) Call(c Client) (*OverlayGet
 	return &res, call(m.ProtoReq(), m, &res, c)
 }
 
-// OverlayGetSourceOrderHighlightObjectForTestResult For Source Order Viewer testing.
+// OverlayGetSourceOrderHighlightObjectForTestResult ...
 type OverlayGetSourceOrderHighlightObjectForTestResult struct {
-
 	// Highlight Source order highlight data for the node id provided.
 	Highlight map[string]gson.JSON `json:"highlight"`
 }
 
 // OverlayHideHighlight Hides any highlight.
-type OverlayHideHighlight struct {
-}
+type OverlayHideHighlight struct{}
 
 // ProtoReq name
 func (m OverlayHideHighlight) ProtoReq() string { return "Overlay.hideHighlight" }
@@ -473,7 +477,6 @@ func (m OverlayHideHighlight) Call(c Client) error {
 // separatation (the owner node might be in a different process). Determine
 // the owner node in the client and use highlightNode.
 type OverlayHighlightFrame struct {
-
 	// FrameID Identifier of the frame to highlight.
 	FrameID PageFrameID `json:"frameId"`
 
@@ -495,7 +498,6 @@ func (m OverlayHighlightFrame) Call(c Client) error {
 // OverlayHighlightNode Highlights DOM node with given id or with the given JavaScript object wrapper. Either nodeId or
 // objectId must be specified.
 type OverlayHighlightNode struct {
-
 	// HighlightConfig A descriptor for the highlight appearance.
 	HighlightConfig *OverlayHighlightConfig `json:"highlightConfig"`
 
@@ -522,7 +524,6 @@ func (m OverlayHighlightNode) Call(c Client) error {
 
 // OverlayHighlightQuad Highlights given quad. Coordinates are absolute with respect to the main frame viewport.
 type OverlayHighlightQuad struct {
-
 	// Quad Quad to highlight
 	Quad DOMQuad `json:"quad"`
 
@@ -543,7 +544,6 @@ func (m OverlayHighlightQuad) Call(c Client) error {
 
 // OverlayHighlightRect Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
 type OverlayHighlightRect struct {
-
 	// X X coordinate
 	X int `json:"x"`
 
@@ -574,7 +574,6 @@ func (m OverlayHighlightRect) Call(c Client) error {
 // OverlayHighlightSourceOrder Highlights the source order of the children of the DOM node with given id or with the given
 // JavaScript object wrapper. Either nodeId or objectId must be specified.
 type OverlayHighlightSourceOrder struct {
-
 	// SourceOrderConfig A descriptor for the appearance of the overlay drawing.
 	SourceOrderConfig *OverlaySourceOrderConfig `json:"sourceOrderConfig"`
 
@@ -599,7 +598,6 @@ func (m OverlayHighlightSourceOrder) Call(c Client) error {
 // OverlaySetInspectMode Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted.
 // Backend then generates 'inspectNodeRequested' event upon element selection.
 type OverlaySetInspectMode struct {
-
 	// Mode Set an inspection mode.
 	Mode OverlayInspectMode `json:"mode"`
 
@@ -618,7 +616,6 @@ func (m OverlaySetInspectMode) Call(c Client) error {
 
 // OverlaySetShowAdHighlights Highlights owner element of all frames detected to be ads.
 type OverlaySetShowAdHighlights struct {
-
 	// Show True for showing ad highlights
 	Show bool `json:"show"`
 }
@@ -633,7 +630,6 @@ func (m OverlaySetShowAdHighlights) Call(c Client) error {
 
 // OverlaySetPausedInDebuggerMessage ...
 type OverlaySetPausedInDebuggerMessage struct {
-
 	// Message (optional) The message to display, also triggers resume and step over controls.
 	Message string `json:"message,omitempty"`
 }
@@ -650,7 +646,6 @@ func (m OverlaySetPausedInDebuggerMessage) Call(c Client) error {
 
 // OverlaySetShowDebugBorders Requests that backend shows debug borders on layers
 type OverlaySetShowDebugBorders struct {
-
 	// Show True for showing debug borders
 	Show bool `json:"show"`
 }
@@ -665,7 +660,6 @@ func (m OverlaySetShowDebugBorders) Call(c Client) error {
 
 // OverlaySetShowFPSCounter Requests that backend shows the FPS counter
 type OverlaySetShowFPSCounter struct {
-
 	// Show True for showing the FPS counter
 	Show bool `json:"show"`
 }
@@ -680,7 +674,6 @@ func (m OverlaySetShowFPSCounter) Call(c Client) error {
 
 // OverlaySetShowGridOverlays Highlight multiple elements with the CSS Grid overlay.
 type OverlaySetShowGridOverlays struct {
-
 	// GridNodeHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
 	GridNodeHighlightConfigs []*OverlayGridNodeHighlightConfig `json:"gridNodeHighlightConfigs"`
 }
@@ -695,7 +688,6 @@ func (m OverlaySetShowGridOverlays) Call(c Client) error {
 
 // OverlaySetShowFlexOverlays ...
 type OverlaySetShowFlexOverlays struct {
-
 	// FlexNodeHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
 	FlexNodeHighlightConfigs []*OverlayFlexNodeHighlightConfig `json:"flexNodeHighlightConfigs"`
 }
@@ -710,7 +702,6 @@ func (m OverlaySetShowFlexOverlays) Call(c Client) error {
 
 // OverlaySetShowScrollSnapOverlays ...
 type OverlaySetShowScrollSnapOverlays struct {
-
 	// ScrollSnapHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
 	ScrollSnapHighlightConfigs []*OverlayScrollSnapHighlightConfig `json:"scrollSnapHighlightConfigs"`
 }
@@ -727,7 +718,6 @@ func (m OverlaySetShowScrollSnapOverlays) Call(c Client) error {
 
 // OverlaySetShowContainerQueryOverlays ...
 type OverlaySetShowContainerQueryOverlays struct {
-
 	// ContainerQueryHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
 	ContainerQueryHighlightConfigs []*OverlayContainerQueryHighlightConfig `json:"containerQueryHighlightConfigs"`
 }
@@ -744,7 +734,6 @@ func (m OverlaySetShowContainerQueryOverlays) Call(c Client) error {
 
 // OverlaySetShowPaintRects Requests that backend shows paint rectangles
 type OverlaySetShowPaintRects struct {
-
 	// Result True for showing paint rectangles
 	Result bool `json:"result"`
 }
@@ -759,7 +748,6 @@ func (m OverlaySetShowPaintRects) Call(c Client) error {
 
 // OverlaySetShowLayoutShiftRegions Requests that backend shows layout shift regions
 type OverlaySetShowLayoutShiftRegions struct {
-
 	// Result True for showing layout shift regions
 	Result bool `json:"result"`
 }
@@ -776,7 +764,6 @@ func (m OverlaySetShowLayoutShiftRegions) Call(c Client) error {
 
 // OverlaySetShowScrollBottleneckRects Requests that backend shows scroll bottleneck rects
 type OverlaySetShowScrollBottleneckRects struct {
-
 	// Show True for showing scroll bottleneck rects
 	Show bool `json:"show"`
 }
@@ -791,9 +778,8 @@ func (m OverlaySetShowScrollBottleneckRects) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
-// OverlaySetShowHitTestBorders Requests that backend shows hit-test borders on layers
+// OverlaySetShowHitTestBorders (deprecated) Deprecated, no longer has any effect.
 type OverlaySetShowHitTestBorders struct {
-
 	// Show True for showing hit-test borders
 	Show bool `json:"show"`
 }
@@ -808,7 +794,6 @@ func (m OverlaySetShowHitTestBorders) Call(c Client) error {
 
 // OverlaySetShowWebVitals Request that backend shows an overlay with web vital metrics.
 type OverlaySetShowWebVitals struct {
-
 	// Show ...
 	Show bool `json:"show"`
 }
@@ -823,7 +808,6 @@ func (m OverlaySetShowWebVitals) Call(c Client) error {
 
 // OverlaySetShowViewportSizeOnResize Paints viewport size upon main frame resize.
 type OverlaySetShowViewportSizeOnResize struct {
-
 	// Show Whether to paint size or not.
 	Show bool `json:"show"`
 }
@@ -840,7 +824,6 @@ func (m OverlaySetShowViewportSizeOnResize) Call(c Client) error {
 
 // OverlaySetShowHinge Add a dual screen device hinge
 type OverlaySetShowHinge struct {
-
 	// HingeConfig (optional) hinge data, null means hideHinge
 	HingeConfig *OverlayHingeConfig `json:"hingeConfig,omitempty"`
 }
@@ -853,10 +836,23 @@ func (m OverlaySetShowHinge) Call(c Client) error {
 	return call(m.ProtoReq(), m, nil, c)
 }
 
+// OverlaySetShowIsolatedElements Show elements in isolation mode with overlays.
+type OverlaySetShowIsolatedElements struct {
+	// IsolatedElementHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
+	IsolatedElementHighlightConfigs []*OverlayIsolatedElementHighlightConfig `json:"isolatedElementHighlightConfigs"`
+}
+
+// ProtoReq name
+func (m OverlaySetShowIsolatedElements) ProtoReq() string { return "Overlay.setShowIsolatedElements" }
+
+// Call sends the request
+func (m OverlaySetShowIsolatedElements) Call(c Client) error {
+	return call(m.ProtoReq(), m, nil, c)
+}
+
 // OverlayInspectNodeRequested Fired when the node should be inspected. This happens after call to `setInspectMode` or when
 // user manually inspects an element.
 type OverlayInspectNodeRequested struct {
-
 	// BackendNodeID Id of the node to inspect.
 	BackendNodeID DOMBackendNodeID `json:"backendNodeId"`
 }
@@ -868,7 +864,6 @@ func (evt OverlayInspectNodeRequested) ProtoEvent() string {
 
 // OverlayNodeHighlightRequested Fired when the node should be highlighted. This happens after call to `setInspectMode`.
 type OverlayNodeHighlightRequested struct {
-
 	// NodeID ...
 	NodeID DOMNodeID `json:"nodeId"`
 }
@@ -880,7 +875,6 @@ func (evt OverlayNodeHighlightRequested) ProtoEvent() string {
 
 // OverlayScreenshotRequested Fired when user asks to capture screenshot of some area on the page.
 type OverlayScreenshotRequested struct {
-
 	// Viewport Viewport to capture, in device independent pixels (dip).
 	Viewport *PageViewport `json:"viewport"`
 }
@@ -891,8 +885,7 @@ func (evt OverlayScreenshotRequested) ProtoEvent() string {
 }
 
 // OverlayInspectModeCanceled Fired when user cancels the inspect mode.
-type OverlayInspectModeCanceled struct {
-}
+type OverlayInspectModeCanceled struct{}
 
 // ProtoEvent name
 func (evt OverlayInspectModeCanceled) ProtoEvent() string {

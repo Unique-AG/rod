@@ -22,7 +22,7 @@ import (
 	"github.com/Unique-AG/rod/lib/proto"
 	"github.com/Unique-AG/rod/lib/utils"
 	"github.com/ysmood/got"
-	"github.com/ysmood/gotrace/pkg/testleak"
+	"github.com/ysmood/gotrace"
 	"github.com/ysmood/gson"
 )
 
@@ -33,66 +33,94 @@ var LogDir = slash(fmt.Sprintf("tmp/cdp-log/%s", time.Now().Format("2006-01-02_1
 func init() {
 	got.DefaultFlags("timeout=5m", "run=/")
 
-	utils.E(os.MkdirAll(slash("tmp/cdp-log"), 0755))
+	utils.E(os.MkdirAll(slash("tmp/cdp-log"), 0o755))
 
 	launcher.NewBrowser().MustGet() // preload browser to local
 }
 
-// entry point for all tests
-func Test(t *testing.T) {
-	testleak.Check(t, 0)
+var testerPool TesterPool
 
-	got.Each(t, newTesterPool(t).get)
+func TestMain(m *testing.M) {
+	testerPool = newTesterPool()
+
+	code := m.Run()
+	if code != 0 {
+		os.Exit(code)
+	}
+
+	testerPool.cleanup()
+
+	if err := gotrace.Check(0, gotrace.IgnoreFuncs("internal/poll.runtime_pollWait")); err != nil {
+		log.Fatal(err)
+	}
 }
 
-// T is a tester. Testers are thread-safe, they shouldn't race each other.
-type T struct {
+var setup = func(t *testing.T) G {
+	return testerPool.get(t)
+}
+
+// G is a tester. Testers are thread-safe, they shouldn't race each other.
+type G struct {
 	got.G
 
-	mc      *MockClient
+	// mock client for proxy the cdp requests
+	mc *MockClient
+
+	// a random browser instance from the pool. If you have changed state of it, you must reset it
+	// or it may affect other test cases.
 	browser *rod.Browser
-	page    *rod.Page
+
+	// a random page instance from the pool. If you have changed state of it, you must reset it
+	// or it may affect other test cases.
+	page *rod.Page
+
+	// use it to cancel the TimeoutEach for each test case
+	cancelTimeout func()
 }
 
-type TesterPool chan *T
+// TesterPool if we don't use pool to cache, the total time will be much longer.
+type TesterPool struct {
+	pool     chan *G
+	parallel int
+}
 
-func newTesterPool(t *testing.T) TesterPool {
+func newTesterPool() TesterPool {
 	parallel := got.Parallel()
 	if parallel == 0 {
 		parallel = runtime.GOMAXPROCS(0)
 	}
 	fmt.Println("parallel test", parallel)
 
-	cp := TesterPool(make(chan *T, parallel))
-
-	t.Cleanup(func() {
-		go func() {
-			for i := 0; i < parallel; i++ {
-				if t := <-cp; t != nil {
-					t.browser.MustClose()
-				}
-			}
-		}()
-	})
+	cp := TesterPool{
+		pool:     make(chan *G, parallel),
+		parallel: parallel,
+	}
 
 	for i := 0; i < parallel; i++ {
-		cp <- nil
+		cp.pool <- nil
 	}
 
 	return cp
 }
 
 // new tester
-func (cp TesterPool) new() *T {
-	u := launcher.New().MustLaunch()
+func (tp TesterPool) new() *G {
+	u := launcher.New().Set("proxy-bypass-list", "<-loopback>").MustLaunch()
 
 	mc := newMockClient(u)
 
 	browser := rod.New().Client(mc).MustConnect().MustIgnoreCertErrors(false)
 
-	page := browser.MustPage()
+	pages := browser.MustPages()
 
-	return &T{
+	var page *rod.Page
+	if pages.Empty() {
+		page = browser.MustPage()
+	} else {
+		page = pages.First()
+	}
+
+	return &G{
 		mc:      mc,
 		browser: browser,
 		page:    page,
@@ -100,83 +128,108 @@ func (cp TesterPool) new() *T {
 }
 
 // get a tester
-func (cp TesterPool) get(t *testing.T) T {
-	parallel := got.Parallel() != 1
-	if parallel {
+func (tp TesterPool) get(t *testing.T) G {
+	if got.Parallel() != 1 {
 		t.Parallel()
 	}
 
-	tester := <-cp
+	tester := <-tp.pool
 	if tester == nil {
-		tester = cp.new()
+		tester = tp.new()
 	}
-	t.Cleanup(func() { cp <- tester })
+	t.Cleanup(func() { tp.pool <- tester })
 
 	tester.G = got.New(t)
 	tester.mc.t = t
-	tester.mc.log.SetOutput(tester.Open(true, LogDir, tester.mc.id, t.Name()[5:]+".log"))
+	tester.mc.log.SetOutput(tester.Open(true, filepath.Join(LogDir, tester.mc.id, t.Name()+".log")))
 
-	tester.checkLeaking(!parallel)
-	tester.PanicAfter(*TimeoutEach)
+	tester.checkLeaking()
 
 	return *tester
 }
 
-func (t T) enableCDPLog() {
-	t.mc.principal.Logger(rod.DefaultLogger)
+func (tp TesterPool) cleanup() {
+	for i := 0; i < tp.parallel; i++ {
+		if t := <-testerPool.pool; t != nil {
+			t.browser.MustClose()
+		}
+	}
 }
 
-func (t T) dump(args ...interface{}) {
-	t.Log(utils.Dump(args))
+func (g G) enableCDPLog() {
+	g.mc.principal.Logger(rod.DefaultLogger)
 }
 
-func (t T) blank() string {
-	return t.srcFile("./fixtures/blank.html")
+func (g G) dump(args ...interface{}) {
+	g.Log(utils.Dump(args))
+}
+
+func (g G) blank() string {
+	return g.srcFile("./fixtures/blank.html")
+}
+
+func (g G) html(content string) string {
+	return g.Serve().Route("/", "", content).URL()
 }
 
 // Get abs file path from fixtures folder, such as "file:///a/b/click.html".
 // Usually the path can be used for html src attribute like:
-//     <img src="file:///a/b">
-func (t T) srcFile(path string) string {
-	t.Helper()
+//
+//	<img src="file:///a/b">
+func (g G) srcFile(path string) string {
+	g.Helper()
 	f, err := filepath.Abs(slash(path))
-	t.E(err)
+	g.E(err)
 	return "file://" + f
 }
 
-func (t T) newPage(u ...string) *rod.Page {
-	t.Helper()
-	p := t.browser.MustPage(u...)
-	t.Cleanup(func() {
-		if !t.Failed() {
+func (g G) newPage(u ...string) *rod.Page {
+	g.Helper()
+	p := g.browser.MustPage(u...)
+	g.Cleanup(func() {
+		if !g.Failed() {
 			p.MustClose()
 		}
 	})
 	return p
 }
 
-func (t T) checkLeaking(checkGoroutine bool) {
-	if checkGoroutine {
-		testleak.Check(t.Testable.(*testing.T), 0)
-	}
+func (g *G) checkLeaking() {
+	ig := gotrace.CombineIgnores(gotrace.IgnoreCurrent(), gotrace.IgnoreNonChildren())
+	gotrace.CheckLeak(g.Testable, 0, ig)
 
-	t.Cleanup(func() {
-		if t.Failed() {
+	self := gotrace.Get(false)[0]
+	g.cancelTimeout = g.DoAfter(*TimeoutEach, func() {
+		t := gotrace.Get(true).Filter(func(t *gotrace.Trace) bool {
+			if t.GoroutineID == self.GoroutineID {
+				return false
+			}
+			return ig(t)
+		}).String()
+		panic(fmt.Sprintf(`[rod_test.TimeoutEach] %s timeout after %v
+running goroutines: %s`, g.Name(), *TimeoutEach, t))
+	})
+
+	g.Cleanup(func() {
+		if g.Failed() {
 			return
 		}
 
-		res, err := proto.TargetGetTargets{}.Call(t.browser)
-		t.E(err)
-		if len(res.TargetInfos) > 2 { // don't account the init about:blank
-			t.Logf("leaking pages: %v", utils.Dump(res.TargetInfos))
+		// close all other pages other than g.page
+		res, err := proto.TargetGetTargets{}.Call(g.browser)
+		g.E(err)
+		for _, info := range res.TargetInfos {
+			if info.TargetID != g.page.TargetID {
+				g.E(proto.TargetCloseTarget{TargetID: info.TargetID}.Call(g.browser))
+			}
 		}
 
-		if t.browser.LoadState(t.page.SessionID, proto.FetchEnable{}) {
-			t.Logf("leaking FetchEnable")
-			t.FailNow()
+		if g.browser.LoadState(g.page.SessionID, &proto.FetchEnable{}) {
+			g.Logf("leaking FetchEnable")
+			g.FailNow()
 		}
 
-		t.mc.setCall(nil)
+		g.mc.setCall(nil)
 	})
 }
 
@@ -191,7 +244,6 @@ type MockClient struct {
 	log       *log.Logger
 	principal *cdp.Client
 	call      Call
-	connect   func() error
 	event     <-chan *cdp.Event
 }
 
@@ -201,21 +253,14 @@ func newMockClient(u string) *MockClient {
 	id := fmt.Sprintf("%02d", atomic.AddInt32(&mockClientCount, 1))
 
 	// create init log file
-	utils.E(os.MkdirAll(filepath.Join(LogDir, id), 0755))
+	utils.E(os.MkdirAll(filepath.Join(LogDir, id), 0o755))
 	f, err := os.Create(filepath.Join(LogDir, id, "_.log"))
 	log := log.New(f, "", log.Ltime)
 	utils.E(err)
 
-	client := cdp.New(u).Logger(utils.MultiLogger(defaults.CDP, log))
+	client := cdp.New().Logger(utils.MultiLogger(defaults.CDP, log)).Start(cdp.MustConnectWS(u))
 
 	return &MockClient{id: id, principal: client, log: log}
-}
-
-func (mc *MockClient) Connect(ctx context.Context) error {
-	if mc.connect != nil {
-		return mc.connect()
-	}
-	return mc.principal.Connect(ctx)
 }
 
 func (mc *MockClient) Event() <-chan *cdp.Event {
@@ -259,11 +304,11 @@ func (mc *MockClient) resetCall() {
 // Use it to find out which cdp call to intercept. Put a print like log.Println("*****") after the cdp call you want to intercept.
 // The output of the test should has something like:
 //
-//     [stubCounter] begin
-//     [stubCounter] 1, proto.DOMResolveNode{}
-//     [stubCounter] 1, proto.RuntimeCallFunctionOn{}
-//     [stubCounter] 2, proto.RuntimeCallFunctionOn{}
-//     01:49:43 *****
+//	[stubCounter] begin
+//	[stubCounter] 1, proto.DOMResolveNode{}
+//	[stubCounter] 1, proto.RuntimeCallFunctionOn{}
+//	[stubCounter] 2, proto.RuntimeCallFunctionOn{}
+//	01:49:43 *****
 //
 // So the 3rd call is the one we want to intercept, then you can use the output with s.at or s.errorAt.
 func (mc *MockClient) stubCounter() {
@@ -334,13 +379,15 @@ type MockReader struct {
 	err error
 }
 
-func (mr *MockReader) Read(p []byte) (n int, err error) {
+func (mr *MockReader) Read(_ []byte) (n int, err error) {
 	return 0, mr.err
 }
 
-func (t T) LintIgnore(got.Skip) {
+func TestLintIgnore(t *testing.T) {
+	t.Skip()
+
 	_ = rod.Try(func() {
-		tt := T{}
+		tt := G{}
 		tt.dump()
 		tt.enableCDPLog()
 

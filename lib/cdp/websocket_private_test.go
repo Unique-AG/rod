@@ -6,62 +6,86 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"sync"
+	"testing"
 	"time"
+
+	"github.com/ysmood/got"
 )
 
-func (t T) WebSocketErr() {
+var setup = got.Setup(nil)
+
+func TestWebSocketErr(t *testing.T) {
+	g := setup(t)
+
 	ws := WebSocket{}
-	t.Err(ws.Connect(t.Context(), "://", nil))
+	g.Err(ws.Connect(g.Context(), "://", nil))
 
 	ws.Dialer = &net.Dialer{}
 	ws.initDialer(nil)
 
 	u, err := url.Parse("wss://no-exist")
-	t.E(err)
+	g.E(err)
 	ws.Dialer = nil
 	ws.initDialer(u)
 
 	mc := &MockConn{}
 	ws.conn = mc
-	t.Err(ws.Send([]byte("test")))
+	g.Err(ws.Send([]byte("test")))
 
 	mc.errOnCount = 1
 	mc.frame = []byte{0, 127, 1}
 	ws.r = bufio.NewReader(mc)
-	t.Err(ws.Read())
-
-	t.Err(ws.handshake(t.Timeout(0), nil, nil))
+	g.Err(ws.Read())
 
 	mc.errOnCount = 1
-	t.Err(ws.handshake(t.Context(), u, nil))
+	mc.frame = []byte{0}
+	ws.r = bufio.NewReader(mc)
+	g.Err(ws.Read())
+
+	g.Err(ws.handshake(g.Timeout(0), nil, nil))
+
+	mc.errOnCount = 1
+	g.Err(ws.handshake(g.Context(), u, nil))
 
 	tls := &tlsDialer{}
-	t.Err(tls.DialContext(context.Background(), "", ""))
+	g.Err(tls.DialContext(context.Background(), "", ""))
 }
 
 type MockConn struct {
+	sync.Mutex
 	errOnCount int
 	frame      []byte
 }
 
-func (c *MockConn) Read(b []byte) (n int, err error) {
+func (c *MockConn) checkErr(d int) error {
+	c.Lock()
+	defer c.Unlock()
+
 	if c.errOnCount == 0 {
-		return 0, errors.New("err")
+		return errors.New("err")
 	}
-	c.errOnCount--
+	c.errOnCount += d
+	return nil
+}
+
+func (c *MockConn) Read(b []byte) (int, error) {
+	if err := c.checkErr(-1); err != nil {
+		return 0, err
+	}
+
 	return copy(b, c.frame), nil
 }
 
-func (c *MockConn) Write(b []byte) (n int, err error) {
-	if c.errOnCount == 0 {
-		return 0, errors.New("err")
+func (c *MockConn) Write(b []byte) (int, error) {
+	if err := c.checkErr(-1); err != nil {
+		return 0, err
 	}
-	c.errOnCount--
 	return len(b), nil
 }
 
 func (c *MockConn) Close() error {
-	return nil
+	return c.checkErr(0)
 }
 
 func (c *MockConn) LocalAddr() net.Addr {
@@ -72,14 +96,14 @@ func (c *MockConn) RemoteAddr() net.Addr {
 	return nil
 }
 
-func (c *MockConn) SetDeadline(t time.Time) error {
+func (c *MockConn) SetDeadline(_ time.Time) error {
 	return nil
 }
 
-func (c *MockConn) SetReadDeadline(t time.Time) error {
+func (c *MockConn) SetReadDeadline(_ time.Time) error {
 	return nil
 }
 
-func (c *MockConn) SetWriteDeadline(t time.Time) error {
+func (c *MockConn) SetWriteDeadline(_ time.Time) error {
 	return nil
 }

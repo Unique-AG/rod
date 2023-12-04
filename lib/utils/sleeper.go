@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	mr "math/rand"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -15,7 +14,7 @@ func Sleep(seconds float64) {
 	time.Sleep(d)
 }
 
-// Sleeper sleeps the current gouroutine for sometime, returns the reason to wake, if ctx is done release resource
+// Sleeper sleeps the current goroutine for sometime, returns the reason to wake, if ctx is done release resource
 type Sleeper func(context.Context) error
 
 // ErrMaxSleepCount type
@@ -30,9 +29,7 @@ func (e *ErrMaxSleepCount) Error() string {
 }
 
 // Is interface
-func (e *ErrMaxSleepCount) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
-}
+func (e *ErrMaxSleepCount) Is(err error) bool { _, ok := err.(*ErrMaxSleepCount); return ok }
 
 // CountSleeper wakes immediately. When counts to the max returns *ErrMaxSleepCount
 func CountSleeper(max int) Sleeper {
@@ -62,10 +59,10 @@ func DefaultBackoff(interval time.Duration) time.Duration {
 }
 
 // BackoffSleeper returns a sleeper that sleeps in a backoff manner every time get called.
-// If algorithm is nil, DefaultBackoff will be used.
-// Set interval and maxInterval to the same value to make it a constant sleeper.
+// The sleep interval of the sleeper will grow from initInterval to maxInterval by the specified algorithm, then use maxInterval as the interval.
 // If maxInterval is not greater than 0, the sleeper will wake immediately.
-func BackoffSleeper(init, maxInterval time.Duration, algorithm func(time.Duration) time.Duration) Sleeper {
+// If algorithm is nil, DefaultBackoff will be used.
+func BackoffSleeper(initInterval, maxInterval time.Duration, algorithm func(time.Duration) time.Duration) Sleeper {
 	l := sync.Mutex{}
 
 	if algorithm == nil {
@@ -82,8 +79,8 @@ func BackoffSleeper(init, maxInterval time.Duration, algorithm func(time.Duratio
 		}
 
 		var interval time.Duration
-		if init < maxInterval {
-			interval = algorithm(init)
+		if initInterval < maxInterval {
+			interval = algorithm(initInterval)
 		} else {
 			interval = maxInterval
 		}
@@ -95,7 +92,7 @@ func BackoffSleeper(init, maxInterval time.Duration, algorithm func(time.Duratio
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			init = interval
+			initInterval = interval
 		}
 
 		return nil
